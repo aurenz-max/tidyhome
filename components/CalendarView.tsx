@@ -122,7 +122,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onToggleTask }) => {
                                 const roomTasks = tasksByRoom[room];
                                 const isCollapsed = collapsedGroups.has(`${date}::${room}`);
                                 const roomTotalMinutes = roomTasks.reduce((acc, t) => acc + t.estimatedMinutes, 0);
-                                const completedCount = roomTasks.filter(t => !t.isDue).length;
+                                const completedCount = roomTasks.filter(t => t.isCompleted).length;
                                 const isAllDone = completedCount === roomTasks.length;
 
                                 return (
@@ -163,18 +163,18 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onToggleTask }) => {
                                                             index !== roomTasks.length - 1 ? 'border-b border-slate-50' : ''
                                                         }`}
                                                     >
-                                                        <button 
+                                                        <button
                                                             onClick={() => onToggleTask(task.id)}
                                                             className={`flex-shrink-0 mr-4 transition-colors ${
-                                                                task.isDue ? 'text-slate-300 hover:text-teal-500' : 'text-teal-500'
+                                                                task.isCompleted ? 'text-teal-500' : 'text-slate-300 hover:text-teal-500'
                                                             }`}
                                                         >
-                                                            {task.isDue ? <Circle size={20} strokeWidth={2} /> : <CheckCircle2 size={20} />}
+                                                            {task.isCompleted ? <CheckCircle2 size={20} /> : <Circle size={20} strokeWidth={2} />}
                                                         </button>
-                                                        
+
                                                         <div className="flex-1">
                                                             <div className="flex justify-between items-start">
-                                                                <p className={`text-sm ${task.isDue ? 'text-slate-700 font-medium' : 'text-slate-400 line-through decoration-slate-300'}`}>
+                                                                <p className={`text-sm ${task.isCompleted ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700 font-medium'}`}>
                                                                     {task.description}
                                                                 </p>
                                                             </div>

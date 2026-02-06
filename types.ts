@@ -28,7 +28,8 @@ export interface Task {
   estimatedMinutes: number;
   lastCompleted?: string; // ISO Date string
   nextDueDate: string; // ISO Date string YYYY-MM-DD
-  isDue: boolean; // Derived/Legacy support, usually nextDueDate <= Today
+  isDue: boolean; // Computed: nextDueDate <= today
+  isCompleted?: boolean; // Today's completion status (resets when task becomes due again)
   priority: 'High' | 'Medium' | 'Low';
 }
 

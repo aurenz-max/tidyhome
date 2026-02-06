@@ -79,6 +79,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask }) 
         onSave={handleSaveTask}
         task={selectedTask}
         mode={modalMode}
+        existingTasks={tasks}
       />
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       {/* Filters Toolbar */}
@@ -157,25 +158,25 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask }) 
                     </h3>
                     <div className="space-y-2">
                         {roomTasks.map(task => (
-                            <div 
+                            <div
                                 key={task.id}
                                 className={`group flex items-center p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
-                                    task.isDue 
-                                        ? 'bg-white border-slate-200' 
-                                        : 'bg-slate-50 border-slate-100 opacity-60'
+                                    task.isCompleted
+                                        ? 'bg-slate-50 border-slate-100 opacity-60'
+                                        : 'bg-white border-slate-200'
                                 }`}
                             >
-                                <button 
+                                <button
                                     onClick={() => onToggleTask(task.id)}
                                     className={`flex-shrink-0 mr-4 transition-colors ${
-                                        task.isDue ? 'text-slate-300 hover:text-teal-500' : 'text-teal-500'
+                                        task.isCompleted ? 'text-teal-500' : 'text-slate-300 hover:text-teal-500'
                                     }`}
                                 >
-                                    {task.isDue ? <Circle size={24} strokeWidth={2} /> : <CheckCircle2 size={24} />}
+                                    {task.isCompleted ? <CheckCircle2 size={24} /> : <Circle size={24} strokeWidth={2} />}
                                 </button>
-                                
+
                                 <div className="flex-1">
-                                    <p className={`text-sm font-medium ${task.isDue ? 'text-slate-800' : 'text-slate-500 line-through decoration-slate-400'}`}>
+                                    <p className={`text-sm font-medium ${task.isCompleted ? 'text-slate-500 line-through decoration-slate-400' : 'text-slate-800'}`}>
                                         {task.description || 'Untitled Task'}
                                     </p>
                                     <div className="flex items-center mt-1 space-x-3 text-xs text-slate-500">

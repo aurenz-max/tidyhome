@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Task, RoomType, Frequency } from '../types';
 import { X } from 'lucide-react';
 
@@ -8,18 +8,59 @@ interface TaskModalProps {
   onSave: (task: Partial<Task>) => void;
   task?: Task | null;
   mode: 'add' | 'edit';
+  existingTasks?: Task[];
 }
 
-const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mode }) => {
+// Common cleaning tasks suggestions
+const COMMON_CLEANING_TASKS = [
+  'Clean dishwasher',
+  'Run dishwasher',
+  'Vacuum floors',
+  'Mop floors',
+  'Dust surfaces',
+  'Clean mirrors',
+  'Wipe countertops',
+  'Clean toilet',
+  'Clean shower/tub',
+  'Change bed sheets',
+  'Empty trash',
+  'Clean refrigerator',
+  'Clean microwave',
+  'Clean oven',
+  'Organize closet',
+  'Vacuum carpets',
+  'Sweep floors',
+  'Clean windows',
+  'Wipe baseboards',
+  'Clean light fixtures',
+  'Organize pantry',
+  'Clean sink',
+  'Wipe cabinets',
+  'Clean stove top',
+  'Sanitize surfaces',
+];
+
+const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mode, existingTasks = [] }) => {
   const [formData, setFormData] = useState({
     description: '',
     room: '',
-    roomType: 'Bedroom' as RoomType,
-    frequency: 'Weekly' as Frequency,
+    roomType: RoomType.Bedroom,
+    frequency: Frequency.Weekly,
     estimatedMinutes: 15,
     priority: 'Medium' as 'High' | 'Medium' | 'Low',
     nextDueDate: new Date().toISOString().split('T')[0],
   });
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Build list of task suggestions from existing tasks + common tasks
+  const allSuggestions = useMemo(() => {
+    const existingDescriptions = existingTasks.map(t => t.description).filter(Boolean);
+    const combined = [...new Set([...existingDescriptions, ...COMMON_CLEANING_TASKS])];
+    return combined.sort();
+  }, [existingTasks]);
 
   useEffect(() => {
     if (task && mode === 'edit') {
@@ -36,14 +77,55 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
       setFormData({
         description: '',
         room: '',
-        roomType: 'Bedroom',
-        frequency: 'Weekly',
+        roomType: RoomType.Bedroom,
+        frequency: Frequency.Weekly,
         estimatedMinutes: 15,
         priority: 'Medium',
         nextDueDate: new Date().toISOString().split('T')[0],
       });
     }
+    // Reset suggestions when modal opens/closes
+    setShowSuggestions(false);
+    setFilteredSuggestions([]);
   }, [task, mode, isOpen]);
+
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleDescriptionChange = (value: string) => {
+    setFormData({ ...formData, description: value });
+
+    // Filter suggestions based on input
+    if (value.trim().length > 0) {
+      const filtered = allSuggestions.filter(suggestion =>
+        suggestion.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setFilteredSuggestions(allSuggestions);
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setFormData({ ...formData, description: suggestion });
+    setShowSuggestions(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,18 +164,43 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Task Description */}
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Task Description *
             </label>
             <input
+              ref={inputRef}
               type="text"
               required
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="e.g., Dust all surfaces"
+              onChange={(e) => handleDescriptionChange(e.target.value)}
+              onFocus={() => {
+                setFilteredSuggestions(allSuggestions);
+                setShowSuggestions(true);
+              }}
+              placeholder="e.g., Clean dishwasher"
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              autoComplete="off"
             />
+
+            {/* Suggestions Dropdown */}
+            {showSuggestions && filteredSuggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+              >
+                {filteredSuggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full text-left px-4 py-2 hover:bg-teal-50 hover:text-teal-700 transition-colors text-sm border-b border-slate-100 last:border-b-0"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Room Name and Room Type */}

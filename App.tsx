@@ -3,7 +3,7 @@ import Header from './components/Header';
 import StatsOverview from './components/StatsOverview';
 import TaskList from './components/TaskList';
 import CalendarView from './components/CalendarView';
-import { Task, Frequency } from './types';
+import { Task, Frequency, RoomType } from './types';
 import { FALLBACK_TASKS } from './constants';
 import { generateSmartSchedule, balanceSchedule } from './services/geminiService';
 import { useTasks } from './hooks/useTasks';
@@ -16,14 +16,63 @@ const App: React.FC = () => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'rooms' | 'calendar'>('rooms');
 
+  // Auto-advance tasks to next due date when day changes
+  useEffect(() => {
+    const checkAndResetDaily = async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const savedResetDate = localStorage.getItem('tidyhome_last_reset');
+
+      if (savedResetDate !== today && firestoreTasks.length > 0) {
+        // New day detected - advance completed tasks
+        console.log('New day detected, advancing completed tasks...');
+
+        for (const task of firestoreTasks) {
+          if (task.isCompleted && task.lastCompleted) {
+            const lastCompletedDate = task.lastCompleted.split('T')[0];
+
+            // Only advance if completed today or earlier and task is due
+            if (lastCompletedDate <= today && task.nextDueDate <= today) {
+              const d = new Date(today);
+              switch(task.frequency) {
+                case Frequency.Daily: d.setDate(d.getDate() + 1); break;
+                case Frequency.Weekly: d.setDate(d.getDate() + 7); break;
+                case Frequency.BiWeekly: d.setDate(d.getDate() + 14); break;
+                case Frequency.Monthly: d.setDate(d.getDate() + 30); break;
+                case Frequency.Quarterly: d.setDate(d.getDate() + 90); break;
+                default: d.setDate(d.getDate() + 7);
+              }
+
+              const newNextDueDate = d.toISOString().split('T')[0];
+              await updateTask(task.id, {
+                nextDueDate: newNextDueDate,
+                isCompleted: false // Reset for new cycle
+              });
+            }
+          }
+        }
+
+        localStorage.setItem('tidyhome_last_reset', today);
+      }
+    };
+
+    if (!firestoreLoading) {
+      checkAndResetDaily();
+    }
+  }, [firestoreLoading, firestoreTasks, updateTask]);
+
   // Sync Firestore tasks to local state and refresh isDue status
   useEffect(() => {
     if (!firestoreLoading && firestoreTasks.length > 0) {
       const today = new Date().toISOString().split('T')[0];
-      const refreshedTasks = firestoreTasks.map(task => ({
-        ...task,
-        isDue: task.nextDueDate <= today
-      }));
+      const refreshedTasks = firestoreTasks.map(task => {
+        const isDue = task.nextDueDate <= today;
+
+        return {
+          ...task,
+          isDue,
+          isCompleted: task.isCompleted || false
+        };
+      });
       setTasks(refreshedTasks);
     }
   }, [firestoreTasks, firestoreLoading]);
@@ -80,41 +129,26 @@ const App: React.FC = () => {
   };
 
   const handleToggleTask = async (taskId: string) => {
-    const today = new Date().toISOString().split('T')[0];
     const task = tasks.find(t => t.id === taskId);
 
     if (!task) return;
 
-    const newIsDue = !task.isDue;
-    let nextDate = task.nextDueDate;
-
-    // If completing a task, set next due date based on frequency
-    if (!newIsDue) {
-        const d = new Date();
-        switch(task.frequency) {
-            case Frequency.Daily: d.setDate(d.getDate() + 1); break;
-            case Frequency.Weekly: d.setDate(d.getDate() + 7); break;
-            case Frequency.BiWeekly: d.setDate(d.getDate() + 14); break;
-            case Frequency.Monthly: d.setDate(d.getDate() + 30); break;
-            case Frequency.Quarterly: d.setDate(d.getDate() + 90); break;
-            default: d.setDate(d.getDate() + 7);
-        }
-        nextDate = d.toISOString().split('T')[0];
-    } else {
-        // Unchecking (undoing complete) - revert to today
-        nextDate = today;
-    }
+    const newIsCompleted = !task.isCompleted;
 
     // Update in Firestore
     try {
       const updates: Partial<Task> = {
-        isDue: newIsDue,
-        nextDueDate: nextDate
+        isCompleted: newIsCompleted
       };
 
       // Only set lastCompleted when completing a task (not when unchecking)
-      if (!newIsDue) {
+      if (newIsCompleted) {
         updates.lastCompleted = new Date().toISOString();
+        // DO NOT update nextDueDate here - task should stay in today's list
+        // The nextDueDate will be updated by a daily reset process
+      } else {
+        // When unchecking, clear lastCompleted
+        updates.lastCompleted = undefined as any;
       }
 
       await updateTask(taskId, updates);
@@ -126,7 +160,26 @@ const App: React.FC = () => {
 
   const handleSaveTask = async (taskData: Partial<Task>) => {
     try {
-      await saveTask(taskData as Task);
+      // If no ID exists, this is a new task - generate an ID
+      const taskToSave: any = {
+        id: taskData.id || `task-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        description: taskData.description || '',
+        room: taskData.room || '',
+        roomType: taskData.roomType || RoomType.General,
+        frequency: taskData.frequency || Frequency.Weekly,
+        estimatedMinutes: taskData.estimatedMinutes || 15,
+        priority: taskData.priority || 'Medium',
+        nextDueDate: taskData.nextDueDate || new Date().toISOString().split('T')[0],
+        isDue: taskData.isDue !== undefined ? taskData.isDue : true,
+        isCompleted: taskData.isCompleted || false,
+      };
+
+      // Only include lastCompleted if it has a value (Firestore doesn't accept undefined)
+      if (taskData.lastCompleted) {
+        taskToSave.lastCompleted = taskData.lastCompleted;
+      }
+
+      await saveTask(taskToSave as Task);
     } catch (error) {
       console.error("Failed to save task", error);
       alert("Failed to save task. Please try again.");

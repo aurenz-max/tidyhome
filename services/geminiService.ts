@@ -3,13 +3,13 @@ import { INITIAL_TASKS_RAW, INITIAL_HOUSE_DESC } from '../constants';
 import { Task, Frequency, RoomType } from '../types';
 
 export const generateSmartSchedule = async (): Promise<{ tasks: Task[], analysis: string }> => {
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     console.warn("No API Key found, returning fallback data simulated.");
     // In a real app we might throw, but here we want to avoid crashing if user forgets key
     throw new Error("API Key is missing.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   const today = new Date().toISOString().split('T')[0];
 
   const prompt = `
@@ -47,7 +47,7 @@ export const generateSmartSchedule = async (): Promise<{ tasks: Task[], analysis
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-flash-lite-latest',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -99,11 +99,11 @@ export const generateSmartSchedule = async (): Promise<{ tasks: Task[], analysis
 };
 
 export const balanceSchedule = async (currentTasks: Task[]): Promise<Task[]> => {
-    if (!process.env.API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
         throw new Error("API Key is missing.");
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
     const today = new Date().toISOString().split('T')[0];
 
     // Minimal payload to save tokens
@@ -159,10 +159,13 @@ export const balanceSchedule = async (currentTasks: Task[]): Promise<Task[]> => 
         const updatedTasks = currentTasks.map(task => {
             const update = updates.find((u: any) => u.id === task.id);
             if (update && update.nextDueDate) {
-                return { 
-                    ...task, 
+                const isDue = update.nextDueDate <= today;
+                return {
+                    ...task,
                     nextDueDate: update.nextDueDate,
-                    isDue: update.nextDueDate <= today
+                    isDue,
+                    // Reset completion status when task becomes due again
+                    isCompleted: isDue ? false : task.isCompleted
                 };
             }
             return task;

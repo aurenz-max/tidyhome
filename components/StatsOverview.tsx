@@ -9,8 +9,11 @@ interface StatsOverviewProps {
 const COLORS = ['#0d9488', '#14b8a6', '#5eead4', '#ccfbf1', '#94a3b8'];
 
 const StatsOverview: React.FC<StatsOverviewProps> = ({ tasks }) => {
-  // Calculate total minutes per room
-  const minutesByRoom = tasks.reduce((acc, task) => {
+  // Focus on today's tasks only
+  const todaysTasks = tasks.filter(t => t.isDue);
+
+  // Calculate total minutes per room for TODAY's tasks
+  const minutesByRoom = todaysTasks.reduce((acc, task) => {
     const existing = acc.find(item => item.name === task.room);
     if (existing) {
       existing.minutes += task.estimatedMinutes;
@@ -24,49 +27,49 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ tasks }) => {
   minutesByRoom.sort((a, b) => b.minutes - a.minutes);
   const topRooms = minutesByRoom.slice(0, 6);
 
-  // Status breakdown
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => !t.isDue).length;
-  const dueTasks = totalTasks - completedTasks;
+  // Status breakdown for TODAY
+  const totalTasksToday = todaysTasks.length;
+  const completedTasksToday = todaysTasks.filter(t => t.isCompleted).length;
+  const dueTasksToday = totalTasksToday - completedTasksToday;
 
   const statusData = [
-    { name: 'Completed', value: completedTasks },
-    { name: 'To Do', value: dueTasks },
+    { name: 'Completed', value: completedTasksToday },
+    { name: 'To Do', value: dueTasksToday },
   ];
 
-  const totalTime = tasks.reduce((sum, t) => sum + t.estimatedMinutes, 0);
-  const dueTime = tasks.filter(t => t.isDue).reduce((sum, t) => sum + t.estimatedMinutes, 0);
+  const totalTimeToday = todaysTasks.reduce((sum, t) => sum + t.estimatedMinutes, 0);
+  const remainingTimeToday = todaysTasks.filter(t => !t.isCompleted).reduce((sum, t) => sum + t.estimatedMinutes, 0);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
       {/* Summary Card */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-center">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Current Cycle Status</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">Today's Progress</h3>
         <div className="flex items-end space-x-2 mb-2">
-            <span className="text-4xl font-bold text-teal-600">{Math.round((completedTasks / (totalTasks || 1)) * 100)}%</span>
+            <span className="text-4xl font-bold text-teal-600">{totalTasksToday > 0 ? Math.round((completedTasksToday / totalTasksToday) * 100) : 0}%</span>
             <span className="text-slate-500 mb-1">complete</span>
         </div>
         <div className="w-full bg-slate-100 rounded-full h-2.5 mb-6">
-            <div 
-                className="bg-teal-500 h-2.5 rounded-full transition-all duration-500" 
-                style={{ width: `${Math.round((completedTasks / (totalTasks || 1)) * 100)}%` }}
+            <div
+                className="bg-teal-500 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${totalTasksToday > 0 ? Math.round((completedTasksToday / totalTasksToday) * 100) : 0}%` }}
             ></div>
         </div>
         <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-                <p className="text-slate-500">Remaining Effort</p>
-                <p className="font-semibold text-slate-800">{Math.ceil(dueTime / 60)} hrs {dueTime % 60} mins</p>
+                <p className="text-slate-500">Remaining Today</p>
+                <p className="font-semibold text-slate-800">{Math.floor(remainingTimeToday / 60)}h {remainingTimeToday % 60}m</p>
             </div>
             <div>
-                <p className="text-slate-500">Tasks Due</p>
-                <p className="font-semibold text-slate-800">{dueTasks} tasks</p>
+                <p className="text-slate-500">Tasks Left</p>
+                <p className="font-semibold text-slate-800">{dueTasksToday} of {totalTasksToday}</p>
             </div>
         </div>
       </div>
 
       {/* Time Distribution Chart */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hidden md:block">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Estimated Effort by Room (min)</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">Today's Effort by Room (min)</h3>
         <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topRooms} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
@@ -111,8 +114,8 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ tasks }) => {
             </ResponsiveContainer>
              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                  <div className="text-center">
-                     <p className="text-2xl font-bold text-slate-700">{totalTasks}</p>
-                     <p className="text-xs text-slate-500 uppercase tracking-wide">Total</p>
+                     <p className="text-2xl font-bold text-slate-700">{totalTasksToday}</p>
+                     <p className="text-xs text-slate-500 uppercase tracking-wide">Today</p>
                  </div>
              </div>
          </div>
