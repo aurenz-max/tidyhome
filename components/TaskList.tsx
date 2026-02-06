@@ -1,15 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { Task, RoomType, Frequency } from '../types';
-import { CheckCircle2, Circle, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, AlertCircle, Plus, Edit2 } from 'lucide-react';
+import TaskModal from './TaskModal';
 
 interface TaskListProps {
   tasks: Task[];
   onToggleTask: (taskId: string) => void;
+  onSaveTask: (task: Partial<Task>) => void;
 }
 
-const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask }) => {
+const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask }) => {
   const [activeFilter, setActiveFilter] = useState<'All' | 'Due' | RoomType>('Due');
   const [search, setSearch] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // Get unique rooms for filter tabs
   const rooms = useMemo(() => {
@@ -50,16 +55,40 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask }) => {
     return groups;
   }, [filteredTasks]);
 
+  const handleAddTask = () => {
+    setModalMode('add');
+    setSelectedTask(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setModalMode('edit');
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveTask = (taskData: Partial<Task>) => {
+    onSaveTask(taskData);
+  };
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-[600px] flex flex-col">
+    <>
+      <TaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveTask}
+        task={selectedTask}
+        mode={modalMode}
+      />
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       {/* Filters Toolbar */}
       <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto hide-scrollbar">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
            <button
              onClick={() => setActiveFilter('Due')}
              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-               activeFilter === 'Due' 
-                 ? 'bg-teal-600 text-white shadow-md' 
+               activeFilter === 'Due'
+                 ? 'bg-teal-600 text-white shadow-md'
                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
              }`}
            >
@@ -68,8 +97,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask }) => {
            <button
              onClick={() => setActiveFilter('All')}
              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-               activeFilter === 'All' 
-                 ? 'bg-teal-600 text-white shadow-md' 
+               activeFilter === 'All'
+                 ? 'bg-teal-600 text-white shadow-md'
                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
              }`}
            >
@@ -80,8 +109,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask }) => {
                key={room}
                onClick={() => setActiveFilter(room)}
                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                 activeFilter === room 
-                   ? 'bg-teal-600 text-white shadow-md' 
+                 activeFilter === room
+                   ? 'bg-teal-600 text-white shadow-md'
                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                }`}
              >
@@ -89,18 +118,29 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask }) => {
              </button>
            ))}
         </div>
-        
-        <input 
-            type="text" 
-            placeholder="Search tasks..." 
+
+        <input
+            type="text"
+            placeholder="Search tasks..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full sm:w-64 px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
         />
       </div>
 
+      {/* Add Task Button */}
+      <div className="p-4 border-b border-slate-200">
+        <button
+          onClick={handleAddTask}
+          className="w-full sm:w-auto px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center gap-2 font-medium"
+        >
+          <Plus size={20} />
+          Add New Task
+        </button>
+      </div>
+
       {/* Task List Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-8">
+      <div className="p-4 space-y-8">
         {Object.keys(groupedTasks).length === 0 ? (
             <div className="text-center py-20 text-slate-400">
                 <p>No tasks found for this filter.</p>
@@ -154,6 +194,14 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask }) => {
                                         )}
                                     </div>
                                 </div>
+
+                                <button
+                                    onClick={() => handleEditTask(task)}
+                                    className="flex-shrink-0 ml-4 text-slate-400 hover:text-teal-600 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Edit task"
+                                >
+                                    <Edit2 size={18} />
+                                </button>
                             </div>
                         ))}
                     </div>
@@ -162,6 +210,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask }) => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

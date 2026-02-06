@@ -6,64 +6,53 @@ import CalendarView from './components/CalendarView';
 import { Task, Frequency } from './types';
 import { FALLBACK_TASKS } from './constants';
 import { generateSmartSchedule, balanceSchedule } from './services/geminiService';
-import { Sparkles, Info } from 'lucide-react';
+import { useTasks } from './hooks/useTasks';
+import { Sparkles, Info, Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
+  const { tasks: firestoreTasks, loading: firestoreLoading, updateTask, saveTask } = useTasks();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [viewMode, setViewMode] = useState<'rooms' | 'calendar'>('rooms');
 
-  // Load from local storage or fallback on mount
+  // Sync Firestore tasks to local state and refresh isDue status
   useEffect(() => {
-    const savedTasks = localStorage.getItem('tidyhome_tasks');
-    const savedAnalysis = localStorage.getItem('tidyhome_analysis');
-    
-    // Always use current date to determine if tasks are due, regardless of when they were saved
-    const today = new Date().toISOString().split('T')[0];
-
-    if (savedTasks) {
-      try {
-        const parsedTasks: Task[] = JSON.parse(savedTasks);
-        
-        // Refresh 'isDue' status based on the current actual date
-        // This prevents the "I saved it yesterday so it's not due today" bug
-        const refreshedTasks = parsedTasks.map(task => ({
-          ...task,
-          isDue: task.nextDueDate <= today
-        }));
-        
-        setTasks(refreshedTasks);
-      } catch (e) {
-        console.error("Error parsing tasks from local storage", e);
-        setTasks(FALLBACK_TASKS);
-      }
-    } else {
-      setTasks(FALLBACK_TASKS);
+    if (!firestoreLoading && firestoreTasks.length > 0) {
+      const today = new Date().toISOString().split('T')[0];
+      const refreshedTasks = firestoreTasks.map(task => ({
+        ...task,
+        isDue: task.nextDueDate <= today
+      }));
+      setTasks(refreshedTasks);
     }
-    
+  }, [firestoreTasks, firestoreLoading]);
+
+  // Load AI analysis from localStorage (can be migrated to Firestore later)
+  useEffect(() => {
+    const savedAnalysis = localStorage.getItem('tidyhome_analysis');
     if (savedAnalysis) {
       setAiAnalysis(savedAnalysis);
     }
-    setIsFirstLoad(false);
   }, []);
 
-  // Save to local storage whenever tasks change
+  // Save AI analysis to localStorage when it changes
   useEffect(() => {
-    if (!isFirstLoad) {
-      localStorage.setItem('tidyhome_tasks', JSON.stringify(tasks));
-      if (aiAnalysis) {
-        localStorage.setItem('tidyhome_analysis', aiAnalysis);
-      }
+    if (aiAnalysis) {
+      localStorage.setItem('tidyhome_analysis', aiAnalysis);
     }
-  }, [tasks, aiAnalysis, isFirstLoad]);
+  }, [aiAnalysis]);
 
   const handleGenerateSchedule = async () => {
     setIsLoading(true);
     try {
       const { tasks: newTasks, analysis } = await generateSmartSchedule();
-      setTasks(newTasks);
+
+      // Save all generated tasks to Firestore
+      for (const task of newTasks) {
+        await saveTask(task);
+      }
+
       setAiAnalysis(analysis);
     } catch (error) {
       console.error("Failed to generate schedule", error);
@@ -77,7 +66,11 @@ const App: React.FC = () => {
     setIsLoading(true);
     try {
         const balancedTasks = await balanceSchedule(tasks);
-        setTasks(balancedTasks);
+
+        // Save all balanced tasks to Firestore
+        for (const task of balancedTasks) {
+          await saveTask(task);
+        }
     } catch (error) {
         console.error("Failed to balance schedule", error);
         alert("Failed to balance schedule. Please try again.");
@@ -86,52 +79,82 @@ const App: React.FC = () => {
     }
   };
 
-  const handleToggleTask = (taskId: string) => {
+  const handleToggleTask = async (taskId: string) => {
     const today = new Date().toISOString().split('T')[0];
+    const task = tasks.find(t => t.id === taskId);
 
-    setTasks(prevTasks => prevTasks.map(task => {
-      if (task.id === taskId) {
-        const newIsDue = !task.isDue;
-        let nextDate = task.nextDueDate;
+    if (!task) return;
 
-        // If completing a task, set next due date based on frequency
-        if (!newIsDue) {
-            const d = new Date();
-            switch(task.frequency) {
-                case Frequency.Daily: d.setDate(d.getDate() + 1); break;
-                case Frequency.Weekly: d.setDate(d.getDate() + 7); break;
-                case Frequency.BiWeekly: d.setDate(d.getDate() + 14); break;
-                case Frequency.Monthly: d.setDate(d.getDate() + 30); break;
-                case Frequency.Quarterly: d.setDate(d.getDate() + 90); break;
-                default: d.setDate(d.getDate() + 7);
-            }
-            nextDate = d.toISOString().split('T')[0];
-        } else {
-            // Unchecking (undoing complete) - revert to today usually, or keep original if we stored it (not storing history for simplicity)
-            nextDate = today; 
+    const newIsDue = !task.isDue;
+    let nextDate = task.nextDueDate;
+
+    // If completing a task, set next due date based on frequency
+    if (!newIsDue) {
+        const d = new Date();
+        switch(task.frequency) {
+            case Frequency.Daily: d.setDate(d.getDate() + 1); break;
+            case Frequency.Weekly: d.setDate(d.getDate() + 7); break;
+            case Frequency.BiWeekly: d.setDate(d.getDate() + 14); break;
+            case Frequency.Monthly: d.setDate(d.getDate() + 30); break;
+            case Frequency.Quarterly: d.setDate(d.getDate() + 90); break;
+            default: d.setDate(d.getDate() + 7);
         }
+        nextDate = d.toISOString().split('T')[0];
+    } else {
+        // Unchecking (undoing complete) - revert to today
+        nextDate = today;
+    }
 
-        return {
-          ...task,
-          isDue: newIsDue,
-          lastCompleted: newIsDue ? undefined : new Date().toISOString(),
-          nextDueDate: nextDate
-        };
+    // Update in Firestore
+    try {
+      const updates: Partial<Task> = {
+        isDue: newIsDue,
+        nextDueDate: nextDate
+      };
+
+      // Only set lastCompleted when completing a task (not when unchecking)
+      if (!newIsDue) {
+        updates.lastCompleted = new Date().toISOString();
       }
-      return task;
-    }));
+
+      await updateTask(taskId, updates);
+    } catch (error) {
+      console.error("Failed to update task", error);
+      alert("Failed to update task. Please try again.");
+    }
   };
+
+  const handleSaveTask = async (taskData: Partial<Task>) => {
+    try {
+      await saveTask(taskData as Task);
+    } catch (error) {
+      console.error("Failed to save task", error);
+      alert("Failed to save task. Please try again.");
+    }
+  };
+
+  // Show loading state while Firestore is initializing
+  if (firestoreLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-teal-600 animate-spin mx-auto mb-4" />
+          <p className="text-slate-600 text-lg">Loading your tasks...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 pb-20">
-      <Header 
-        onGenerate={handleGenerateSchedule} 
+      <Header
+        onGenerate={handleGenerateSchedule}
         onBalance={handleBalanceSchedule}
-        isGenerating={isLoading} 
+        isGenerating={isLoading}
         viewMode={viewMode}
         setViewMode={setViewMode}
       />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Welcome / Context Banner */}
@@ -155,7 +178,7 @@ const App: React.FC = () => {
 
         {/* Views */}
         {viewMode === 'rooms' ? (
-             <TaskList tasks={tasks} onToggleTask={handleToggleTask} />
+             <TaskList tasks={tasks} onToggleTask={handleToggleTask} onSaveTask={handleSaveTask} />
         ) : (
              <CalendarView tasks={tasks} onToggleTask={handleToggleTask} />
         )}
