@@ -1,0 +1,5 @@
+{
+  "name": "TidyHome AI",
+  "description": "A smart home maintenance checklist and scheduler powered by Gemini. Optimized for families with pets and kids.",
+  "requestFramePermissions": []
+}
