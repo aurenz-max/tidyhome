@@ -48,3 +48,11 @@ export interface ScheduleGenerationResponse {
   tasks: Task[];
   analysis: string;
 }
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName?: string;
+  createdAt: string;
+  photoURL?: string;
+}

@@ -18,25 +18,22 @@ import { Task } from '../types';
 const TASKS_COLLECTION = 'tasks';
 const SETTINGS_COLLECTION = 'settings';
 
-// For now, we'll use a single user. Later you can add Firebase Auth
-const USER_ID = 'default-user';
-
 // Get user-specific collection path
-const getUserTasksCollection = () => collection(db, `users/${USER_ID}/${TASKS_COLLECTION}`);
-const getUserSettingsDoc = () => doc(db, `users/${USER_ID}/${SETTINGS_COLLECTION}/preferences`);
+const getUserTasksCollection = (userId: string) => collection(db, `users/${userId}/${TASKS_COLLECTION}`);
+const getUserSettingsDoc = (userId: string) => doc(db, `users/${userId}/${SETTINGS_COLLECTION}/preferences`);
 
 // Tasks CRUD operations
 export const firestoreService = {
   // Fetch all tasks
-  async getTasks(): Promise<Task[]> {
-    const tasksCol = getUserTasksCollection();
+  async getTasks(userId: string): Promise<Task[]> {
+    const tasksCol = getUserTasksCollection(userId);
     const snapshot = await getDocs(tasksCol);
     return snapshot.docs.map(doc => ({ ...doc.data() } as Task));
   },
 
   // Subscribe to real-time task updates
-  subscribeTasks(callback: (tasks: Task[]) => void): () => void {
-    const tasksCol = getUserTasksCollection();
+  subscribeTasks(userId: string, callback: (tasks: Task[]) => void): () => void {
+    const tasksCol = getUserTasksCollection(userId);
     return onSnapshot(tasksCol, (snapshot) => {
       const tasks = snapshot.docs.map(doc => ({ ...doc.data() } as Task));
       callback(tasks);
@@ -44,8 +41,8 @@ export const firestoreService = {
   },
 
   // Add or update a task
-  async saveTask(task: Task): Promise<void> {
-    const taskDoc = doc(getUserTasksCollection(), task.id);
+  async saveTask(userId: string, task: Task): Promise<void> {
+    const taskDoc = doc(getUserTasksCollection(userId), task.id);
     console.log('💾 Saving task to Firestore:', task.id);
 
     // Firestore doesn't allow undefined values, so we need to remove them
@@ -61,8 +58,8 @@ export const firestoreService = {
   },
 
   // Update specific fields of a task
-  async updateTask(taskId: string, updates: Partial<Task>): Promise<void> {
-    const taskDoc = doc(getUserTasksCollection(), taskId);
+  async updateTask(userId: string, taskId: string, updates: Partial<Task>): Promise<void> {
+    const taskDoc = doc(getUserTasksCollection(userId), taskId);
 
     // Firestore doesn't allow undefined values, so we need to remove them
     // or use deleteField() for fields we want to clear
@@ -77,34 +74,34 @@ export const firestoreService = {
   },
 
   // Delete a task
-  async deleteTask(taskId: string): Promise<void> {
-    const taskDoc = doc(getUserTasksCollection(), taskId);
+  async deleteTask(userId: string, taskId: string): Promise<void> {
+    const taskDoc = doc(getUserTasksCollection(userId), taskId);
     await deleteDoc(taskDoc);
   },
 
   // Bulk save tasks (useful for initial data migration)
-  async saveTasks(tasks: Task[]): Promise<void> {
+  async saveTasks(userId: string, tasks: Task[]): Promise<void> {
     console.log('💾 Bulk saving', tasks.length, 'tasks to Firestore...');
-    const promises = tasks.map(task => this.saveTask(task));
+    const promises = tasks.map(task => this.saveTask(userId, task));
     await Promise.all(promises);
     console.log('✅ All tasks saved successfully');
   },
 
   // Settings operations
-  async getSettings(): Promise<{ houseDescription?: string } | null> {
-    const settingsDoc = getUserSettingsDoc();
+  async getSettings(userId: string): Promise<{ houseDescription?: string } | null> {
+    const settingsDoc = getUserSettingsDoc(userId);
     const snapshot = await getDoc(settingsDoc);
     return snapshot.exists() ? snapshot.data() : null;
   },
 
-  async saveSettings(settings: { houseDescription?: string }): Promise<void> {
-    const settingsDoc = getUserSettingsDoc();
+  async saveSettings(userId: string, settings: { houseDescription?: string }): Promise<void> {
+    const settingsDoc = getUserSettingsDoc(userId);
     await setDoc(settingsDoc, settings);
   },
 
   // Check if user has data (for first-time initialization)
-  async hasExistingData(): Promise<boolean> {
-    const tasksCol = getUserTasksCollection();
+  async hasExistingData(userId: string): Promise<boolean> {
+    const tasksCol = getUserTasksCollection(userId);
     const snapshot = await getDocs(tasksCol);
     return !snapshot.empty;
   }

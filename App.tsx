@@ -3,16 +3,19 @@ import Header from './components/Header';
 import StatsOverview from './components/StatsOverview';
 import TaskList from './components/TaskList';
 import CalendarView from './components/CalendarView';
+import AuthForm from './components/AuthForm';
 import { Task, Frequency, RoomType } from './types';
 import { FALLBACK_TASKS } from './constants';
 import { generateSmartSchedule } from './services/geminiService';
 import { useTasks } from './hooks/useTasks';
+import { useAuth } from './contexts/AuthContext';
 import { isTaskDueOnDate, isOccurrenceCompleted, getNextOccurrence, getToday } from './utils/recurrence';
 import { optimizeWeeklySchedule } from './utils/scheduler';
 import { Sparkles, Info, Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
-  const { tasks: firestoreTasks, loading: firestoreLoading, updateTask, saveTask } = useTasks();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { tasks: firestoreTasks, loading: firestoreLoading, updateTask, saveTask } = useTasks(user?.uid || null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
@@ -188,6 +191,23 @@ const App: React.FC = () => {
     }
   };
 
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-teal-600 animate-spin mx-auto mb-4" />
+          <p className="text-slate-600 text-lg">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth form if not logged in
+  if (!user) {
+    return <AuthForm />;
+  }
+
   // Show loading state while Firestore is initializing
   if (firestoreLoading) {
     return (
@@ -208,6 +228,8 @@ const App: React.FC = () => {
         isGenerating={isLoading}
         viewMode={viewMode}
         setViewMode={setViewMode}
+        userName={user.displayName || user.email || 'User'}
+        onSignOut={signOut}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
