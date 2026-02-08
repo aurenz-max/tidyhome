@@ -27,10 +27,13 @@ export interface Task {
   frequency: Frequency;
   estimatedMinutes: number;
   lastCompleted?: string; // ISO Date string
-  nextDueDate: string; // ISO Date string YYYY-MM-DD
-  isDue: boolean; // Computed: nextDueDate <= today
-  isCompleted?: boolean; // Today's completion status (resets when task becomes due again)
+  nextDueDate: string; // ISO Date string YYYY-MM-DD (cached, derived from recurrence)
+  isDue: boolean; // Computed from recurrence: is this task scheduled today?
+  isCompleted?: boolean; // Today's completion status (derived from completedDates)
   priority: 'High' | 'Medium' | 'Low';
+  scheduledDay?: number; // Weekly/BiWeekly: day-of-week (0=Sun..6=Sat), Monthly/Quarterly: day-of-month (1-31), Daily: undefined
+  anchorDate?: string; // YYYY-MM-DD starting reference for BiWeekly/Quarterly recurrence
+  completedDates?: string[]; // Array of YYYY-MM-DD dates this task was completed on
 }
 
 export interface HouseProfile {

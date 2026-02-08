@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 // Firebase configuration from environment variables
 // Create a .env.local file based on .env.local.template
@@ -24,3 +25,7 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firestore
 export const db = getFirestore(app);
 console.log('✅ Firestore initialized');
+
+// Initialize Auth
+export const auth = getAuth(app);
+console.log('✅ Auth initialized');

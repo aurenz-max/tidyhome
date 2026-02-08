@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { Task } from '../types';
 import { firestoreService } from '../services/firestoreService';
 import { FALLBACK_TASKS } from '../constants';
+import { migrateTaskToRecurrence, needsMigration } from '../utils/migration';
+import { optimizeWeeklySchedule } from '../utils/scheduler';
+
+const MIGRATION_KEY = 'tidyhome_schema_v2';
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -17,13 +21,22 @@ export function useTasks() {
         const hasData = await firestoreService.hasExistingData();
 
         if (!hasData) {
-          // First-time user: seed with fallback tasks
+          // First-time user: seed with fallback tasks (already have recurrence fields)
           console.log('No existing data found. Initializing with default tasks...');
           await firestoreService.saveTasks(FALLBACK_TASKS);
         }
 
         // Subscribe to real-time updates
-        unsubscribe = firestoreService.subscribeTasks((updatedTasks) => {
+        unsubscribe = firestoreService.subscribeTasks(async (updatedTasks) => {
+          // Check if migration is needed (one-time)
+          if (!localStorage.getItem(MIGRATION_KEY) && updatedTasks.some(needsMigration)) {
+            console.log('Migrating tasks to recurrence model...');
+            await runMigration(updatedTasks);
+            localStorage.setItem(MIGRATION_KEY, 'true');
+            // The migration writes will trigger another snapshot, so we return early
+            return;
+          }
+
           setTasks(updatedTasks);
           setLoading(false);
         });
@@ -38,11 +51,8 @@ export function useTasks() {
 
     initializeTasks();
 
-    // Cleanup subscription on unmount
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      if (unsubscribe) unsubscribe();
     };
   }, []);
 
@@ -81,4 +91,26 @@ export function useTasks() {
     saveTask,
     deleteTask
   };
+}
+
+/**
+ * One-time migration: add recurrence fields to existing tasks and run optimizer.
+ */
+async function runMigration(tasks: Task[]) {
+  // 1. Migrate each task to add scheduledDay, anchorDate, completedDates
+  const migratedTasks = tasks.map(task => ({
+    ...task,
+    ...migrateTaskToRecurrence(task),
+  }));
+
+  // 2. Run the optimizer to assign balanced scheduledDay values for weekly tasks
+  const assignments = optimizeWeeklySchedule(migratedTasks);
+  for (const { taskId, scheduledDay } of assignments) {
+    const task = migratedTasks.find(t => t.id === taskId);
+    if (task) task.scheduledDay = scheduledDay;
+  }
+
+  // 3. Save all migrated tasks back to Firestore
+  await firestoreService.saveTasks(migratedTasks);
+  console.log('Migration complete. Tasks updated with recurrence fields.');
 }

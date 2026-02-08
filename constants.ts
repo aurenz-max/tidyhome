@@ -1,4 +1,6 @@
 import { Task, Frequency, RoomType } from './types';
+import { getNextOccurrence, isTaskDueOnDate, getToday } from './utils/recurrence';
+import { optimizeWeeklySchedule } from './utils/scheduler';
 
 export const INITIAL_HOUSE_DESC = `
 Main floor is kitchen dining room entryway office half bathroom and living room, mix of carpet and hardwood floors I’d estimate 1500 sqft. Upstairs is main bedroom and 3 kid bedrooms and 1 guest bedroom, all carpet, 2 bathrooms approx 1200 sqft. Basement is partially finished with carpet 600 sqft.
@@ -89,22 +91,18 @@ Whole-House Extras (Dog & Kid Friendly)
 	∙	Shake out or vacuum entry mats/rugs
 `;
 
-// Helper to stagger dates so not everything is due on day 1
-const getStaggeredDate = (frequency: Frequency, index: number): string => {
-  const today = new Date();
-  
-  // Daily tasks are always due today (or we'd start behind)
-  if (frequency === Frequency.Daily) {
-    return today.toISOString().split('T')[0];
+// Helper to derive scheduledDay from frequency for monthly/quarterly tasks
+const getDefaultScheduledDay = (frequency: Frequency, index: number): number | undefined => {
+  switch (frequency) {
+    case Frequency.Daily:
+      return undefined; // Daily tasks don't need scheduledDay
+    case Frequency.Monthly:
+    case Frequency.Quarterly:
+      // Stagger monthly tasks across different days of the month
+      return ((index * 7) % 28) + 1; // Days 1, 8, 15, 22, etc.
+    default:
+      return undefined; // Weekly/BiWeekly will be set by optimizer
   }
-
-  // Spread Weekly/Monthly tasks over the next 7 days based on their list position
-  // This creates a "balanced" looking schedule out of the box
-  const offset = index % 7; 
-  const targetDate = new Date(today);
-  targetDate.setDate(today.getDate() + offset);
-  
-  return targetDate.toISOString().split('T')[0];
 };
 
 const RAW_LIST: Omit<Task, 'nextDueDate' | 'isDue'>[] = [
@@ -197,15 +195,34 @@ const RAW_LIST: Omit<Task, 'nextDueDate' | 'isDue'>[] = [
   { id: 'wh6', room: 'Whole House', roomType: RoomType.General, description: 'Shake out or vacuum entry mats/rugs', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Medium' },
 ];
 
-export const FALLBACK_TASKS: Task[] = RAW_LIST.map((t, index) => {
-  const nextDueDate = getStaggeredDate(t.frequency, index);
-  // Calculate isDue. We are generating this *now*, so anything today or before is due.
-  const today = new Date().toISOString().split('T')[0];
-  const isDue = nextDueDate <= today;
-  
-  return {
+// Build fallback tasks with recurrence fields
+const buildFallbackTasks = (): Task[] => {
+  const today = getToday();
+
+  // First pass: create tasks with scheduledDay for monthly/quarterly
+  const tasksWithRecurrence: Task[] = RAW_LIST.map((t, index) => ({
     ...t,
-    nextDueDate,
-    isDue
-  };
-});
+    scheduledDay: getDefaultScheduledDay(t.frequency, index),
+    anchorDate: t.frequency === Frequency.BiWeekly || t.frequency === Frequency.Quarterly ? today : undefined,
+    completedDates: [],
+    nextDueDate: today, // Temporary, will be computed below
+    isDue: false, // Temporary, will be computed below
+  }));
+
+  // Run optimizer to assign scheduledDay for weekly/bi-weekly tasks
+  const assignments = optimizeWeeklySchedule(tasksWithRecurrence);
+  for (const { taskId, scheduledDay } of assignments) {
+    const task = tasksWithRecurrence.find(t => t.id === taskId);
+    if (task) task.scheduledDay = scheduledDay;
+  }
+
+  // Compute nextDueDate and isDue from recurrence
+  for (const task of tasksWithRecurrence) {
+    task.nextDueDate = getNextOccurrence(task, today);
+    task.isDue = isTaskDueOnDate(task, today);
+  }
+
+  return tasksWithRecurrence;
+};
+
+export const FALLBACK_TASKS: Task[] = buildFallbackTasks();

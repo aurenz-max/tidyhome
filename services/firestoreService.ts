@@ -47,7 +47,16 @@ export const firestoreService = {
   async saveTask(task: Task): Promise<void> {
     const taskDoc = doc(getUserTasksCollection(), task.id);
     console.log('💾 Saving task to Firestore:', task.id);
-    await setDoc(taskDoc, task);
+
+    // Firestore doesn't allow undefined values, so we need to remove them
+    const cleanTask: any = {};
+    for (const [key, value] of Object.entries(task)) {
+      if (value !== undefined) {
+        cleanTask[key] = value;
+      }
+    }
+
+    await setDoc(taskDoc, cleanTask);
     console.log('✅ Task saved successfully:', task.id);
   },
 

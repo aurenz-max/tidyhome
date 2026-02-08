@@ -40,6 +40,8 @@ const COMMON_CLEANING_TASKS = [
   'Sanitize surfaces',
 ];
 
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mode, existingTasks = [] }) => {
   const [formData, setFormData] = useState({
     description: '',
@@ -48,7 +50,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
     frequency: Frequency.Weekly,
     estimatedMinutes: 15,
     priority: 'Medium' as 'High' | 'Medium' | 'Low',
-    nextDueDate: new Date().toISOString().split('T')[0],
+    scheduledDay: new Date().getDay() as number | undefined,
   });
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
@@ -71,7 +73,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
         frequency: task.frequency,
         estimatedMinutes: task.estimatedMinutes,
         priority: task.priority,
-        nextDueDate: task.nextDueDate,
+        scheduledDay: task.scheduledDay,
       });
     } else if (mode === 'add') {
       setFormData({
@@ -81,7 +83,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
         frequency: Frequency.Weekly,
         estimatedMinutes: 15,
         priority: 'Medium',
-        nextDueDate: new Date().toISOString().split('T')[0],
+        scheduledDay: new Date().getDay(),
       });
     }
     // Reset suggestions when modal opens/closes
@@ -127,11 +129,22 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
     setShowSuggestions(false);
   };
 
+  // Determine whether scheduledDay picker should show, and what type
+  const needsScheduledDay = formData.frequency !== Frequency.Daily;
+  const isDayOfWeek = formData.frequency === Frequency.Weekly || formData.frequency === Frequency.BiWeekly;
+  const isDayOfMonth = formData.frequency === Frequency.Monthly || formData.frequency === Frequency.Quarterly;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const taskData: Partial<Task> = {
-      ...formData,
+      description: formData.description,
+      room: formData.room,
+      roomType: formData.roomType,
+      frequency: formData.frequency,
+      estimatedMinutes: formData.estimatedMinutes,
+      priority: formData.priority,
+      scheduledDay: needsScheduledDay ? formData.scheduledDay : undefined,
       isDue: true,
     };
 
@@ -251,12 +264,25 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
               <select
                 required
                 value={formData.frequency}
-                onChange={(e) => setFormData({ ...formData, frequency: e.target.value as Frequency })}
+                onChange={(e) => {
+                  const freq = e.target.value as Frequency;
+                  let day = formData.scheduledDay;
+                  // Reset scheduledDay when switching frequency types
+                  if (freq === Frequency.Daily) {
+                    day = undefined;
+                  } else if (freq === Frequency.Weekly || freq === Frequency.BiWeekly) {
+                    day = (day !== undefined && day >= 0 && day <= 6) ? day : new Date().getDay();
+                  } else {
+                    // Monthly/Quarterly: day-of-month
+                    day = (day !== undefined && day >= 1 && day <= 31) ? day : new Date().getDate();
+                  }
+                  setFormData({ ...formData, frequency: freq, scheduledDay: day });
+                }}
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="Daily">Daily</option>
                 <option value="Weekly">Weekly</option>
-                <option value="BiWeekly">Bi-Weekly</option>
+                <option value="Bi-Weekly">Bi-Weekly</option>
                 <option value="Monthly">Monthly</option>
                 <option value="Quarterly">Quarterly</option>
               </select>
@@ -277,7 +303,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
             </div>
           </div>
 
-          {/* Priority and Next Due Date */}
+          {/* Priority and Scheduled Day */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -295,18 +321,49 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Next Due Date *
-              </label>
-              <input
-                type="date"
-                required
-                value={formData.nextDueDate}
-                onChange={(e) => setFormData({ ...formData, nextDueDate: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
+            {/* Scheduled Day - only shown for non-daily frequencies */}
+            {needsScheduledDay && (
+              <div>
+                {isDayOfWeek ? (
+                  <>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Scheduled Day of Week *
+                    </label>
+                    <div className="flex gap-1">
+                      {DAY_NAMES.map((name, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, scheduledDay: idx })}
+                          className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors ${
+                            formData.scheduledDay === idx
+                              ? 'bg-teal-600 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : isDayOfMonth ? (
+                  <>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Day of Month *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max="31"
+                      value={formData.scheduledDay ?? 1}
+                      onChange={(e) => setFormData({ ...formData, scheduledDay: parseInt(e.target.value) })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </>
+                ) : null}
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
