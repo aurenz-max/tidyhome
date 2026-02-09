@@ -36,6 +36,21 @@ export interface Task {
   completedDates?: string[]; // Array of YYYY-MM-DD dates this task was completed on
 }
 
+export interface RoomTaskTemplate {
+  description: string;
+  frequency: Frequency;
+  estimatedMinutes: number;
+  priority: 'High' | 'Medium' | 'Low';
+}
+
+export interface RoomTemplate {
+  roomType: RoomType;
+  defaultName: string;
+  icon: string; // Lucide icon name
+  description: string;
+  tasks: RoomTaskTemplate[];
+}
+
 export interface HouseProfile {
   sqftMain: number;
   sqftUpstairs: number;

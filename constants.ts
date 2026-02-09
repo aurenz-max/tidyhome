@@ -1,6 +1,138 @@
-import { Task, Frequency, RoomType } from './types';
+import { Task, Frequency, RoomType, RoomTemplate } from './types';
 import { getNextOccurrence, isTaskDueOnDate, getToday } from './utils/recurrence';
 import { optimizeWeeklySchedule } from './utils/scheduler';
+
+export const ROOM_TASK_CATALOG: Record<RoomType, RoomTemplate> = {
+  [RoomType.Kitchen]: {
+    roomType: RoomType.Kitchen,
+    defaultName: 'Kitchen',
+    icon: 'ChefHat',
+    description: 'Counters, appliances, sink, floors',
+    tasks: [
+      { description: 'Wipe down all countertops and backsplash', frequency: Frequency.Daily, estimatedMinutes: 10, priority: 'High' },
+      { description: 'Clean exterior of appliances (fridge, oven, microwave, dishwasher)', frequency: Frequency.Weekly, estimatedMinutes: 15, priority: 'Medium' },
+      { description: 'Clean inside microwave', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Medium' },
+      { description: 'Scrub sink and polish fixtures', frequency: Frequency.Daily, estimatedMinutes: 5, priority: 'High' },
+      { description: 'Wipe cabinet fronts (especially around handles)', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Low' },
+      { description: 'Clean stovetop and range hood', frequency: Frequency.Daily, estimatedMinutes: 5, priority: 'Medium' },
+      { description: 'Empty trash and replace liner', frequency: Frequency.Daily, estimatedMinutes: 2, priority: 'High' },
+      { description: 'Mop floors', frequency: Frequency.Weekly, estimatedMinutes: 15, priority: 'Medium' },
+    ],
+  },
+  [RoomType.DiningRoom]: {
+    roomType: RoomType.DiningRoom,
+    defaultName: 'Dining Room',
+    icon: 'UtensilsCrossed',
+    description: 'Table, chairs, shelving, floors',
+    tasks: [
+      { description: 'Dust table and chairs', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Medium' },
+      { description: 'Wipe down table surface', frequency: Frequency.Daily, estimatedMinutes: 2, priority: 'Low' },
+      { description: 'Dust any buffet/sideboard/shelving', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Low' },
+      { description: 'Vacuum / mop floor', frequency: Frequency.Weekly, estimatedMinutes: 10, priority: 'Medium' },
+    ],
+  },
+  [RoomType.LivingRoom]: {
+    roomType: RoomType.LivingRoom,
+    defaultName: 'Living Room',
+    icon: 'Sofa',
+    description: 'Surfaces, furniture, floors',
+    tasks: [
+      { description: 'Dust all surfaces (TV stand, shelves, end tables)', frequency: Frequency.Weekly, estimatedMinutes: 10, priority: 'Medium' },
+      { description: 'Wipe down TV screen and electronics', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Low' },
+      { description: 'Fluff and arrange couch cushions and pillows', frequency: Frequency.Daily, estimatedMinutes: 3, priority: 'Low' },
+      { description: 'Vacuum carpet and under furniture edges', frequency: Frequency.Weekly, estimatedMinutes: 15, priority: 'High' },
+      { description: 'Vacuum upholstered furniture', frequency: Frequency.Weekly, estimatedMinutes: 10, priority: 'High' },
+    ],
+  },
+  [RoomType.Office]: {
+    roomType: RoomType.Office,
+    defaultName: 'Office',
+    icon: 'Monitor',
+    description: 'Desk, electronics, floors',
+    tasks: [
+      { description: 'Dust desk and shelving', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Medium' },
+      { description: 'Wipe down desk surface', frequency: Frequency.Weekly, estimatedMinutes: 2, priority: 'Medium' },
+      { description: 'Dust electronics/monitors', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Low' },
+      { description: 'Vacuum / mop floor', frequency: Frequency.Weekly, estimatedMinutes: 10, priority: 'Medium' },
+    ],
+  },
+  [RoomType.Entryway]: {
+    roomType: RoomType.Entryway,
+    defaultName: 'Entryway',
+    icon: 'DoorOpen',
+    description: 'Door, mirrors, shoe rack, floor',
+    tasks: [
+      { description: 'Wipe down door and door handle', frequency: Frequency.Weekly, estimatedMinutes: 2, priority: 'High' },
+      { description: 'Clean any mirrors or glass', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Medium' },
+      { description: 'Dust shoe rack/coat hooks', frequency: Frequency.Weekly, estimatedMinutes: 2, priority: 'Low' },
+      { description: 'Mop/vacuum floor', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'High' },
+    ],
+  },
+  [RoomType.Bathroom]: {
+    roomType: RoomType.Bathroom,
+    defaultName: 'Bathroom',
+    icon: 'Bath',
+    description: 'Toilet, sink, shower/tub, floors',
+    tasks: [
+      { description: 'Scrub and disinfect toilet (inside and out)', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'High' },
+      { description: 'Clean sink and polish fixtures', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'High' },
+      { description: 'Wipe down counter and mirror', frequency: Frequency.Weekly, estimatedMinutes: 3, priority: 'Medium' },
+      { description: 'Clean tub/shower (scrub walls, floor, fixtures)', frequency: Frequency.Weekly, estimatedMinutes: 15, priority: 'High' },
+      { description: 'Wipe cabinet fronts', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Low' },
+      { description: 'Empty trash', frequency: Frequency.Weekly, estimatedMinutes: 1, priority: 'Medium' },
+      { description: 'Mop floor', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Medium' },
+    ],
+  },
+  [RoomType.Bedroom]: {
+    roomType: RoomType.Bedroom,
+    defaultName: 'Bedroom',
+    icon: 'Bed',
+    description: 'Bed, surfaces, floors',
+    tasks: [
+      { description: 'Make bed neatly', frequency: Frequency.Daily, estimatedMinutes: 3, priority: 'Low' },
+      { description: 'Change bed linens', frequency: Frequency.Weekly, estimatedMinutes: 10, priority: 'Medium' },
+      { description: 'Dust nightstands, dresser, and all surfaces', frequency: Frequency.Weekly, estimatedMinutes: 10, priority: 'Medium' },
+      { description: 'Vacuum carpet / mop floor', frequency: Frequency.Weekly, estimatedMinutes: 10, priority: 'Medium' },
+      { description: 'Dust ceiling fan/light fixtures', frequency: Frequency.Monthly, estimatedMinutes: 5, priority: 'Low' },
+    ],
+  },
+  [RoomType.Hallway]: {
+    roomType: RoomType.Hallway,
+    defaultName: 'Hallway',
+    icon: 'ArrowRightLeft',
+    description: 'Carpet, decor, surfaces',
+    tasks: [
+      { description: 'Vacuum carpet / mop floor', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Medium' },
+      { description: 'Dust any hallway furniture or decor', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Low' },
+    ],
+  },
+  [RoomType.Basement]: {
+    roomType: RoomType.Basement,
+    defaultName: 'Basement',
+    icon: 'ArrowDownToLine',
+    description: 'Surfaces, furniture, floors, cobwebs',
+    tasks: [
+      { description: 'Dust all surfaces and shelving', frequency: Frequency.Monthly, estimatedMinutes: 10, priority: 'Low' },
+      { description: 'Wipe down any furniture', frequency: Frequency.Monthly, estimatedMinutes: 5, priority: 'Low' },
+      { description: 'Vacuum carpet thoroughly', frequency: Frequency.Weekly, estimatedMinutes: 15, priority: 'Medium' },
+      { description: 'Check for cobwebs in corners/ceiling', frequency: Frequency.Monthly, estimatedMinutes: 5, priority: 'Low' },
+    ],
+  },
+  [RoomType.General]: {
+    roomType: RoomType.General,
+    defaultName: 'Whole House',
+    icon: 'Home',
+    description: 'Baseboards, fans, windows, switches',
+    tasks: [
+      { description: 'Vacuum all baseboards', frequency: Frequency.Monthly, estimatedMinutes: 20, priority: 'Medium' },
+      { description: 'Dust ceiling fan blades (all rooms)', frequency: Frequency.Monthly, estimatedMinutes: 15, priority: 'Low' },
+      { description: 'Clean interior glass on windows and sliding doors', frequency: Frequency.Weekly, estimatedMinutes: 15, priority: 'Medium' },
+      { description: 'Spot-clean any visible marks on walls', frequency: Frequency.Monthly, estimatedMinutes: 10, priority: 'Low' },
+      { description: 'Wipe light switches and door handles throughout', frequency: Frequency.Weekly, estimatedMinutes: 10, priority: 'High' },
+      { description: 'Shake out or vacuum entry mats/rugs', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Medium' },
+    ],
+  },
+};
 
 export const INITIAL_HOUSE_DESC = `
 Main floor is kitchen dining room entryway office half bathroom and living room, mix of carpet and hardwood floors I’d estimate 1500 sqft. Upstairs is main bedroom and 3 kid bedrooms and 1 guest bedroom, all carpet, 2 bathrooms approx 1200 sqft. Basement is partially finished with carpet 600 sqft.

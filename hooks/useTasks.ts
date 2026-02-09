@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Task } from '../types';
+import { Task, RoomType, Frequency, RoomTaskTemplate } from '../types';
 import { firestoreService } from '../services/firestoreService';
 import { FALLBACK_TASKS } from '../constants';
 import { migrateTaskToRecurrence, needsMigration } from '../utils/migration';
 import { optimizeWeeklySchedule } from '../utils/scheduler';
+import { getNextOccurrence, isTaskDueOnDate, getToday } from '../utils/recurrence';
 
 const MIGRATION_KEY = 'tidyhome_schema_v2';
 
@@ -12,12 +13,14 @@ const noop = async () => {};
 export function useTasks(userId: string | null) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!userId) {
       setTasks([]);
       setLoading(false);
+      setNeedsOnboarding(false);
       return;
     }
 
@@ -30,9 +33,10 @@ export function useTasks(userId: string | null) {
         const hasData = await firestoreService.hasExistingData(userId!);
 
         if (!hasData) {
-          // First-time user: seed with fallback tasks (already have recurrence fields)
-          console.log('No existing data found. Initializing with default tasks...');
-          await firestoreService.saveTasks(userId!, FALLBACK_TASKS);
+          // First-time user: show onboarding wizard instead of auto-seeding
+          setNeedsOnboarding(true);
+          setLoading(false);
+          return;
         }
 
         // Subscribe to real-time updates
@@ -65,6 +69,23 @@ export function useTasks(userId: string | null) {
     };
   }, [userId]);
 
+  const completeOnboarding = async (selectedTasks: Task[]) => {
+    if (!userId) return;
+    try {
+      await firestoreService.saveTasks(userId, selectedTasks);
+      setNeedsOnboarding(false);
+      setLoading(true);
+      // Start subscribing now that data exists
+      firestoreService.subscribeTasks(userId, async (updatedTasks) => {
+        setTasks(updatedTasks);
+        setLoading(false);
+      });
+    } catch (err) {
+      console.error('Error completing onboarding:', err);
+      throw err;
+    }
+  };
+
   const updateTask = async (taskId: string, updates: Partial<Task>) => {
     if (!userId) return;
     try {
@@ -95,13 +116,77 @@ export function useTasks(userId: string | null) {
     }
   };
 
+  const addRoom = async (roomName: string, roomType: RoomType, seedTasks: RoomTaskTemplate[]) => {
+    if (!userId) return;
+    const today = getToday();
+
+    const newTasks: Task[] = seedTasks.map((tmpl, i) => {
+      const id = `${roomType.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}-${i}`;
+      const scheduledDay = (tmpl.frequency === Frequency.Monthly || tmpl.frequency === Frequency.Quarterly)
+        ? ((i * 7) % 28) + 1
+        : undefined;
+      const anchorDate = (tmpl.frequency === Frequency.BiWeekly || tmpl.frequency === Frequency.Quarterly)
+        ? today : undefined;
+
+      return {
+        id,
+        room: roomName,
+        roomType,
+        description: tmpl.description,
+        frequency: tmpl.frequency,
+        estimatedMinutes: tmpl.estimatedMinutes,
+        priority: tmpl.priority,
+        scheduledDay,
+        anchorDate,
+        completedDates: [],
+        nextDueDate: today,
+        isDue: false,
+        isCompleted: false,
+      } as Task;
+    });
+
+    // Optimize weekly task scheduling
+    const assignments = optimizeWeeklySchedule(newTasks);
+    for (const { taskId, scheduledDay } of assignments) {
+      const task = newTasks.find(t => t.id === taskId);
+      if (task) task.scheduledDay = scheduledDay;
+    }
+    for (const task of newTasks) {
+      task.nextDueDate = getNextOccurrence(task, today);
+      task.isDue = isTaskDueOnDate(task, today);
+    }
+
+    await firestoreService.saveTasks(userId, newTasks);
+  };
+
+  const renameRoom = async (oldName: string, newName: string) => {
+    if (!userId) return;
+    const roomTasks = tasks.filter(t => t.room === oldName);
+    for (const task of roomTasks) {
+      await firestoreService.updateTask(userId, task.id, { room: newName });
+    }
+  };
+
+  const deleteRoom = async (roomName: string) => {
+    if (!userId) return;
+    const roomTasks = tasks.filter(t => t.room === roomName);
+    for (const task of roomTasks) {
+      await firestoreService.deleteTask(userId, task.id);
+    }
+  };
+
   return {
     tasks,
     loading,
     error,
+    needsOnboarding,
     updateTask,
     saveTask,
-    deleteTask
+    deleteTask,
+    completeOnboarding,
+    addRoom,
+    renameRoom,
+    deleteRoom,
   };
 }
 

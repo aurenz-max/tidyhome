@@ -4,6 +4,8 @@ import StatsOverview from './components/StatsOverview';
 import TaskList from './components/TaskList';
 import CalendarView from './components/CalendarView';
 import AuthForm from './components/AuthForm';
+import OnboardingWizard from './components/OnboardingWizard';
+import RoomManager from './components/RoomManager';
 import { Task, Frequency, RoomType } from './types';
 import { FALLBACK_TASKS } from './constants';
 import { generateSmartSchedule } from './services/geminiService';
@@ -15,11 +17,12 @@ import { Sparkles, Info, Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { tasks: firestoreTasks, loading: firestoreLoading, updateTask, saveTask } = useTasks(user?.uid || null);
+  const { tasks: firestoreTasks, loading: firestoreLoading, needsOnboarding, updateTask, saveTask, deleteTask, completeOnboarding, addRoom, renameRoom, deleteRoom } = useTasks(user?.uid || null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'rooms' | 'calendar'>('rooms');
+  const [showRoomManager, setShowRoomManager] = useState(false);
 
   // Daily reset: prune old completedDates, recompute isCompleted
   useEffect(() => {
@@ -208,6 +211,18 @@ const App: React.FC = () => {
     return <AuthForm />;
   }
 
+  // Show onboarding wizard for first-time users
+  if (needsOnboarding) {
+    return (
+      <OnboardingWizard
+        onComplete={completeOnboarding}
+        onSkip={async () => {
+          await completeOnboarding(FALLBACK_TASKS);
+        }}
+      />
+    );
+  }
+
   // Show loading state while Firestore is initializing
   if (firestoreLoading) {
     return (
@@ -230,6 +245,7 @@ const App: React.FC = () => {
         setViewMode={setViewMode}
         userName={user.displayName || user.email || 'User'}
         onSignOut={signOut}
+        onManageRooms={() => setShowRoomManager(true)}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -255,7 +271,7 @@ const App: React.FC = () => {
 
         {/* Views */}
         {viewMode === 'rooms' ? (
-             <TaskList tasks={tasks} onToggleTask={handleToggleTask} onSaveTask={handleSaveTask} />
+             <TaskList tasks={tasks} onToggleTask={handleToggleTask} onSaveTask={handleSaveTask} onDeleteTask={deleteTask} />
         ) : (
              <CalendarView tasks={tasks} onToggleTask={handleToggleTask} />
         )}
@@ -271,6 +287,15 @@ const App: React.FC = () => {
         )}
 
       </main>
+
+      <RoomManager
+        isOpen={showRoomManager}
+        onClose={() => setShowRoomManager(false)}
+        tasks={tasks}
+        onAddRoom={addRoom}
+        onRenameRoom={renameRoom}
+        onDeleteRoom={deleteRoom}
+      />
     </div>
   );
 };

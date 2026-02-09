@@ -1,20 +1,22 @@
 import React, { useState, useMemo } from 'react';
 import { Task, RoomType, Frequency } from '../types';
-import { CheckCircle2, Circle, Clock, AlertCircle, Plus, Edit2 } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, AlertCircle, Plus, Edit2, Trash2, Check, X } from 'lucide-react';
 import TaskModal from './TaskModal';
 
 interface TaskListProps {
   tasks: Task[];
   onToggleTask: (taskId: string) => void;
   onSaveTask: (task: Partial<Task>) => void;
+  onDeleteTask: (taskId: string) => void;
 }
 
-const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask }) => {
+const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, onDeleteTask }) => {
   const [activeFilter, setActiveFilter] = useState<'All' | 'Due' | RoomType>('Due');
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   // Get unique rooms for filter tabs
   const rooms = useMemo(() => {
@@ -196,13 +198,45 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask }) 
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={() => handleEditTask(task)}
-                                    className="flex-shrink-0 ml-4 text-slate-400 hover:text-teal-600 transition-colors opacity-0 group-hover:opacity-100"
-                                    title="Edit task"
-                                >
-                                    <Edit2 size={18} />
-                                </button>
+                                {confirmingDeleteId === task.id ? (
+                                    <div className="flex-shrink-0 ml-4 flex items-center gap-1.5 animate-fade-in">
+                                        <span className="text-xs text-red-600 font-medium mr-1">Delete?</span>
+                                        <button
+                                            onClick={() => {
+                                                onDeleteTask(task.id);
+                                                setConfirmingDeleteId(null);
+                                            }}
+                                            className="p-1 rounded bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                                            title="Confirm delete"
+                                        >
+                                            <Check size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => setConfirmingDeleteId(null)}
+                                            className="p-1 rounded bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
+                                            title="Cancel"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex-shrink-0 ml-4 flex items-center gap-2 opacity-0 group-hover:opacity-100">
+                                        <button
+                                            onClick={() => handleEditTask(task)}
+                                            className="text-slate-400 hover:text-teal-600 transition-colors"
+                                            title="Edit task"
+                                        >
+                                            <Edit2 size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => setConfirmingDeleteId(task.id)}
+                                            className="text-slate-400 hover:text-red-500 transition-colors"
+                                            title="Delete task"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

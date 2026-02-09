@@ -43,6 +43,19 @@ const COMMON_CLEANING_TASKS = [
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mode, existingTasks = [] }) => {
+  // Derive unique rooms from existing tasks
+  const existingRooms = useMemo(() => {
+    const roomMap = new Map<string, RoomType>();
+    existingTasks.forEach(t => {
+      if (t.room && !roomMap.has(t.room)) {
+        roomMap.set(t.room, t.roomType);
+      }
+    });
+    return Array.from(roomMap.entries())
+      .map(([name, type]) => ({ name, type }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [existingTasks]);
+
   const [formData, setFormData] = useState({
     description: '',
     room: '',
@@ -78,8 +91,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
     } else if (mode === 'add') {
       setFormData({
         description: '',
-        room: '',
-        roomType: RoomType.Bedroom,
+        room: existingRooms.length > 0 ? existingRooms[0].name : '',
+        roomType: existingRooms.length > 0 ? existingRooms[0].type : RoomType.Bedroom,
         frequency: Frequency.Weekly,
         estimatedMinutes: 15,
         priority: 'Medium',
@@ -89,7 +102,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
     // Reset suggestions when modal opens/closes
     setShowSuggestions(false);
     setFilteredSuggestions([]);
-  }, [task, mode, isOpen]);
+  }, [task, mode, isOpen, existingRooms]);
 
   // Handle click outside to close suggestions
   useEffect(() => {
@@ -216,43 +229,35 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
             )}
           </div>
 
-          {/* Room Name and Room Type */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Room Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.room}
-                onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-                placeholder="e.g., Guest Bedroom"
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Room Type *
-              </label>
+          {/* Room */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Room *
+            </label>
+            {existingRooms.length > 0 ? (
               <select
                 required
-                value={formData.roomType}
-                onChange={(e) => setFormData({ ...formData, roomType: e.target.value as RoomType })}
+                value={formData.room}
+                onChange={(e) => {
+                  const selected = existingRooms.find(r => r.name === e.target.value);
+                  if (selected) {
+                    setFormData({ ...formData, room: selected.name, roomType: selected.type });
+                  }
+                }}
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
-                <option value="Bedroom">Bedroom</option>
-                <option value="Bathroom">Bathroom</option>
-                <option value="Kitchen">Kitchen</option>
-                <option value="Living Room">Living Room</option>
-                <option value="Dining Room">Dining Room</option>
-                <option value="Hallway">Hallway</option>
-                <option value="Entryway">Entryway</option>
-                <option value="Basement">Basement</option>
-                <option value="General">General</option>
+                <option value="" disabled>Select a room...</option>
+                {existingRooms.map(r => (
+                  <option key={r.name} value={r.name}>
+                    {r.name} ({r.type})
+                  </option>
+                ))}
               </select>
-            </div>
+            ) : (
+              <p className="text-sm text-slate-500 italic py-2">
+                No rooms yet. Add rooms via the Room Manager first.
+              </p>
+            )}
           </div>
 
           {/* Frequency and Estimated Time */}
@@ -377,7 +382,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              disabled={existingRooms.length === 0}
+              className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {mode === 'add' ? 'Add Task' : 'Save Changes'}
             </button>

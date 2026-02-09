@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 // Firebase configuration from environment variables
 // Create a .env.local file based on .env.local.template
@@ -26,6 +26,7 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 console.log('✅ Firestore initialized');
 
-// Initialize Auth
+// Initialize Auth with persistent local session
 export const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence);
 console.log('✅ Auth initialized');
