@@ -118,6 +118,21 @@ export const ROOM_TASK_CATALOG: Record<RoomType, RoomTemplate> = {
       { description: 'Check for cobwebs in corners/ceiling', frequency: Frequency.Monthly, estimatedMinutes: 5, priority: 'Low' },
     ],
   },
+  [RoomType.LaundryRoom]: {
+    roomType: RoomType.LaundryRoom,
+    defaultName: 'Laundry Room',
+    icon: 'WashingMachine',
+    description: 'Washer, dryer, surfaces, floors',
+    tasks: [
+      { description: 'Wipe down washer and dryer exterior', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Medium' },
+      { description: 'Clean washer door seal and detergent dispenser', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'High' },
+      { description: 'Clean lint trap and dryer vent area', frequency: Frequency.Weekly, estimatedMinutes: 3, priority: 'High' },
+      { description: 'Wipe counters and folding surfaces', frequency: Frequency.Weekly, estimatedMinutes: 3, priority: 'Medium' },
+      { description: 'Sweep and mop floor', frequency: Frequency.Weekly, estimatedMinutes: 10, priority: 'Medium' },
+      { description: 'Clean utility sink (if present)', frequency: Frequency.Weekly, estimatedMinutes: 5, priority: 'Medium' },
+      { description: 'Organize laundry supplies', frequency: Frequency.Monthly, estimatedMinutes: 5, priority: 'Low' },
+    ],
+  },
   [RoomType.General]: {
     roomType: RoomType.General,
     defaultName: 'Whole House',

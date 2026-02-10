@@ -12,7 +12,7 @@ import {
   arrayUnion,
   arrayRemove,
 } from 'firebase/firestore';
-import { db } from '../firebase.config';
+import { db, auth } from '../firebase.config';
 import { Household, HouseholdMember } from '../types';
 import { profileService } from './profileService';
 
@@ -28,6 +28,7 @@ function generateInviteCode(): string {
 export const householdService = {
   async createHousehold(userId: string, name: string): Promise<Household> {
     const profile = await profileService.getProfile(userId);
+    const currentUser = auth.currentUser;
     const householdId = `household-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const inviteCode = generateInviteCode();
 
@@ -43,12 +44,19 @@ export const householdService = {
     // Create household document
     await setDoc(doc(db, 'households', householdId), household);
 
-    // Create member subdocument
+    // Create member subdocument with proper name fallback chain
+    // Priority: profile.displayName -> currentUser.displayName -> email username -> 'User'
+    const displayName = profile?.displayName
+      || currentUser?.displayName
+      || profile?.email?.split('@')[0]
+      || currentUser?.email?.split('@')[0]
+      || 'User';
+
     const member: HouseholdMember = {
       uid: userId,
-      displayName: profile?.displayName || profile?.email || 'User',
-      email: profile?.email || '',
-      photoURL: profile?.photoURL,
+      displayName,
+      email: profile?.email || currentUser?.email || '',
+      photoURL: profile?.photoURL || currentUser?.photoURL || undefined,
       role: 'admin',
       joinedAt: new Date().toISOString(),
     };
@@ -76,6 +84,7 @@ export const householdService = {
 
   async joinHousehold(userId: string, householdId: string): Promise<void> {
     const profile = await profileService.getProfile(userId);
+    const currentUser = auth.currentUser;
 
     // Add user to household memberUids
     const householdRef = doc(db, 'households', householdId);
@@ -83,12 +92,18 @@ export const householdService = {
       memberUids: arrayUnion(userId),
     });
 
-    // Create member subdocument
+    // Create member subdocument with proper name fallback chain
+    const displayName = profile?.displayName
+      || currentUser?.displayName
+      || profile?.email?.split('@')[0]
+      || currentUser?.email?.split('@')[0]
+      || 'User';
+
     const member: HouseholdMember = {
       uid: userId,
-      displayName: profile?.displayName || profile?.email || 'User',
-      email: profile?.email || '',
-      photoURL: profile?.photoURL,
+      displayName,
+      email: profile?.email || currentUser?.email || '',
+      photoURL: profile?.photoURL || currentUser?.photoURL || undefined,
       role: 'member',
       joinedAt: new Date().toISOString(),
     };
@@ -206,5 +221,33 @@ export const householdService = {
     const newCode = generateInviteCode();
     await updateDoc(doc(db, 'households', householdId), { inviteCode: newCode });
     return newCode;
+  },
+
+  async addLocalMember(householdId: string, displayName: string, adminUid: string): Promise<void> {
+    const householdRef = doc(db, 'households', householdId);
+    const householdSnap = await getDoc(householdRef);
+    if (!householdSnap.exists()) throw new Error('Household not found');
+
+    const household = householdSnap.data() as Household;
+    if (household.adminUid !== adminUid) throw new Error('Only admin can add members');
+
+    // Generate a local uid for non-authenticated members
+    const localUid = `local-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+    // Add to household memberUids
+    await updateDoc(householdRef, {
+      memberUids: arrayUnion(localUid),
+    });
+
+    // Create member subdocument
+    const member: HouseholdMember = {
+      uid: localUid,
+      displayName,
+      email: '', // Local members don't have email
+      role: 'member',
+      joinedAt: new Date().toISOString(),
+    };
+
+    await setDoc(doc(db, `households/${householdId}/members`, localUid), member);
   },
 };

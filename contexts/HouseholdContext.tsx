@@ -2,8 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Household, HouseholdMember } from '../types';
 import { householdService } from '../services/householdService';
 import { profileService } from '../services/profileService';
-import { firestoreService } from '../services/firestoreService';
-import { migrateUserTasksToHousehold } from '../services/householdMigrationService';
 import { useAuth } from './AuthContext';
 
 interface HouseholdContextType {
@@ -17,6 +15,7 @@ interface HouseholdContextType {
   leaveHousehold: () => Promise<void>;
   removeMember: (uid: string) => Promise<void>;
   regenerateInviteCode: () => Promise<string>;
+  addLocalMember: (displayName: string) => Promise<void>;
 }
 
 const HouseholdContext = createContext<HouseholdContextType | null>(null);
@@ -34,6 +33,7 @@ export const HouseholdProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [household, setHousehold] = useState<Household | null>(null);
   const [members, setMembers] = useState<HouseholdMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -59,26 +59,9 @@ export const HouseholdProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           });
           unsubMembers = householdService.subscribeMembers(householdId, setMembers);
         } else {
-          // Check if user has legacy data that needs migration
-          const hasLegacy = await firestoreService.hasLegacyUserData(user!.uid);
-          if (hasLegacy) {
-            // Auto-create household and migrate
-            const displayName = user!.displayName || user!.email || 'My';
-            const name = `${displayName.split(' ')[0]}'s Home`;
-            const newHousehold = await householdService.createHousehold(user!.uid, name);
-
-            await migrateUserTasksToHousehold(user!.uid, newHousehold.id);
-
-            unsubHousehold = householdService.subscribeHousehold(newHousehold.id, (h) => {
-              setHousehold(h);
-              setLoading(false);
-            });
-            unsubMembers = householdService.subscribeMembers(newHousehold.id, setMembers);
-          } else {
-            // No household, no legacy data - show setup flow
-            setHousehold(null);
-            setLoading(false);
-          }
+          // No household - show setup flow
+          setHousehold(null);
+          setLoading(false);
         }
       } catch (err) {
         console.error('Error initializing household:', err);
@@ -92,14 +75,13 @@ export const HouseholdProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (unsubHousehold) unsubHousehold();
       if (unsubMembers) unsubMembers();
     };
-  }, [user]);
+  }, [user, refreshTrigger]);
 
   const createHouseholdAction = useCallback(async (name: string) => {
     if (!user) return;
-    const newHousehold = await householdService.createHousehold(user.uid, name);
-    // Subscriptions will be set up on the next effect cycle since profile.householdId changed
-    // But we can set state immediately for responsiveness
-    setHousehold(newHousehold);
+    await householdService.createHousehold(user.uid, name);
+    // Trigger re-initialization to fetch updated profile and set up subscriptions
+    setRefreshTrigger(prev => prev + 1);
   }, [user]);
 
   const joinHouseholdAction = useCallback(async (inviteCode: string) => {
@@ -107,7 +89,8 @@ export const HouseholdProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const found = await householdService.findHouseholdByInviteCode(inviteCode);
     if (!found) throw new Error('Invalid invite code');
     await householdService.joinHousehold(user.uid, found.id);
-    setHousehold(found);
+    // Trigger re-initialization to fetch updated profile and set up subscriptions
+    setRefreshTrigger(prev => prev + 1);
   }, [user]);
 
   const leaveHouseholdAction = useCallback(async () => {
@@ -127,6 +110,11 @@ export const HouseholdProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return householdService.regenerateInviteCode(household.id);
   }, [household]);
 
+  const addLocalMemberAction = useCallback(async (displayName: string) => {
+    if (!user || !household) return;
+    await householdService.addLocalMember(household.id, displayName, user.uid);
+  }, [user, household]);
+
   const getMemberByUid = useCallback((uid: string) => {
     return members.find(m => m.uid === uid);
   }, [members]);
@@ -145,6 +133,7 @@ export const HouseholdProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       leaveHousehold: leaveHouseholdAction,
       removeMember: removeMemberAction,
       regenerateInviteCode: regenerateInviteCodeAction,
+      addLocalMember: addLocalMemberAction,
     }}>
       {children}
     </HouseholdContext.Provider>

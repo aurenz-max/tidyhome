@@ -3,6 +3,7 @@ import { Task, RoomType, Frequency } from '../types';
 import { CheckCircle2, Circle, Clock, AlertCircle, Plus, Edit2, Trash2, Check, X } from 'lucide-react';
 import TaskModal from './TaskModal';
 import { useHousehold } from '../contexts/HouseholdContext';
+import { useRooms } from '../contexts/RoomsContext';
 import { useAuth } from '../contexts/AuthContext';
 
 interface TaskListProps {
@@ -15,6 +16,7 @@ interface TaskListProps {
 const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, onDeleteTask }) => {
   const { user } = useAuth();
   const { members, getMemberByUid } = useHousehold();
+  const { getRoomById } = useRooms();
   const showAssignees = members.length > 1;
   const [activeFilter, setActiveFilter] = useState<'All' | 'Due' | 'Mine' | RoomType>('Due');
   const [search, setSearch] = useState('');
@@ -22,6 +24,15 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+
+  // Helper to get room name from task (supports both new roomId and legacy room field)
+  const getRoomName = (task: Task): string => {
+    if (task.roomId) {
+      const room = getRoomById(task.roomId);
+      return room?.name || task.room || 'General';
+    }
+    return task.room || 'General';
+  };
 
   // Get unique rooms for filter tabs
   const rooms = useMemo(() => {
@@ -34,13 +45,13 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
     return tasks.filter(task => {
       // Safety check for undefined properties
       if (!task) return false;
-      
+
       const description = task.description || '';
-      const room = task.room || '';
-      
-      const matchesSearch = description.toLowerCase().includes(search.toLowerCase()) || 
-                            room.toLowerCase().includes(search.toLowerCase());
-      
+      const roomName = getRoomName(task);
+
+      const matchesSearch = description.toLowerCase().includes(search.toLowerCase()) ||
+                            roomName.toLowerCase().includes(search.toLowerCase());
+
       if (!matchesSearch) return false;
 
       if (activeFilter === 'All') return true;
@@ -48,20 +59,20 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
       if (activeFilter === 'Mine') return task.assignedTo === user?.uid;
       return task.roomType === activeFilter;
     });
-  }, [tasks, activeFilter, search]);
+  }, [tasks, activeFilter, search, getRoomById]);
 
   // Group by Room specific name for display
   const groupedTasks = useMemo(() => {
     const groups: { [key: string]: Task[] } = {};
     filteredTasks.forEach(task => {
-      const roomName = task.room || 'General';
+      const roomName = getRoomName(task);
       if (!groups[roomName]) {
         groups[roomName] = [];
       }
       groups[roomName].push(task);
     });
     return groups;
-  }, [filteredTasks]);
+  }, [filteredTasks, getRoomById]);
 
   const handleAddTask = () => {
     setModalMode('add');

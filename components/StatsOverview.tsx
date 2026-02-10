@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { Task, RoomType, HouseholdMember } from '../types';
+import { useRooms } from '../contexts/RoomsContext';
 
 interface StatsOverviewProps {
   tasks: Task[];
@@ -10,16 +11,28 @@ interface StatsOverviewProps {
 const COLORS = ['#0d9488', '#14b8a6', '#5eead4', '#ccfbf1', '#94a3b8'];
 
 const StatsOverview: React.FC<StatsOverviewProps> = ({ tasks, members = [] }) => {
+  const { getRoomById } = useRooms();
+
+  // Helper to get room name from task
+  const getRoomName = (task: Task): string => {
+    if (task.roomId) {
+      const room = getRoomById(task.roomId);
+      return room?.name || task.room || 'General';
+    }
+    return task.room || 'General';
+  };
+
   // Focus on today's tasks only
   const todaysTasks = tasks.filter(t => t.isDue);
 
   // Calculate total minutes per room for TODAY's tasks
   const minutesByRoom = todaysTasks.reduce((acc, task) => {
-    const existing = acc.find(item => item.name === task.room);
+    const roomName = getRoomName(task);
+    const existing = acc.find(item => item.name === roomName);
     if (existing) {
       existing.minutes += task.estimatedMinutes;
     } else {
-      acc.push({ name: task.room, minutes: task.estimatedMinutes });
+      acc.push({ name: roomName, minutes: task.estimatedMinutes });
     }
     return acc;
   }, [] as { name: string; minutes: number }[]);

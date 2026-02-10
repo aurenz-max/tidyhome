@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useHousehold } from '../contexts/HouseholdContext';
+import { useAuth } from '../contexts/AuthContext';
 import { householdService } from '../services/householdService';
-import { Home, Users, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { Home, Users, ArrowRight, Loader2, AlertCircle, LogOut } from 'lucide-react';
 
 const HouseholdSetup: React.FC = () => {
   const { createHousehold, joinHousehold } = useHousehold();
+  const { signOut } = useAuth();
   const [mode, setMode] = useState<'choose' | 'create' | 'join'>('choose');
   const [householdName, setHouseholdName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -69,7 +71,16 @@ const HouseholdSetup: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 max-w-md w-full overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 max-w-md w-full overflow-hidden relative">
+        {/* Sign Out Button */}
+        <button
+          onClick={() => signOut()}
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors z-10"
+          title="Sign Out"
+        >
+          <LogOut size={20} />
+        </button>
+
         {/* Header */}
         <div className="bg-teal-600 px-6 py-8 text-center text-white">
           <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">

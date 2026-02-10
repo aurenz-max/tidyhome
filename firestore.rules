@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // User profiles
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Households - any authenticated user can create, members can read/write their household
+    match /households/{householdId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null &&
+                     request.auth.uid in resource.data.memberUids;
+      allow update: if request.auth != null &&
+                       request.auth.uid in resource.data.memberUids;
+      allow delete: if request.auth != null &&
+                       request.auth.uid == resource.data.adminUid;
+
+      // Household members subcollection
+      match /members/{memberId} {
+        allow read: if request.auth != null &&
+                       request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberUids;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null &&
+                                 request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberUids;
+      }
+
+      // Household tasks
+      match /tasks/{taskId} {
+        allow read, write: if request.auth != null &&
+                              request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberUids;
+      }
+
+      // Household settings
+      match /settings/{document=**} {
+        allow read, write: if request.auth != null &&
+                              request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberUids;
+      }
+
+      // Household rooms
+      match /rooms/{roomId} {
+        allow read, write: if request.auth != null &&
+                              request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberUids;
+      }
+    }
+  }
+}

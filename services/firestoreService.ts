@@ -6,25 +6,17 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  query,
-  where,
   onSnapshot,
-  Timestamp
 } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { Task } from '../types';
 
-// Collection references
-const TASKS_COLLECTION = 'tasks';
-const SETTINGS_COLLECTION = 'settings';
-
 // Household-scoped collection paths
-const getHouseholdTasksCollection = (householdId: string) => collection(db, `households/${householdId}/${TASKS_COLLECTION}`);
-const getHouseholdSettingsDoc = (householdId: string) => doc(db, `households/${householdId}/${SETTINGS_COLLECTION}/preferences`);
+const getHouseholdTasksCollection = (householdId: string) =>
+  collection(db, `households/${householdId}/tasks`);
 
-// Legacy user-scoped paths (used only during migration)
-const getUserTasksCollection = (userId: string) => collection(db, `users/${userId}/${TASKS_COLLECTION}`);
-const getUserSettingsDoc = (userId: string) => doc(db, `users/${userId}/${SETTINGS_COLLECTION}/preferences`);
+const getHouseholdSettingsDoc = (householdId: string) =>
+  doc(db, `households/${householdId}/settings/preferences`);
 
 // Tasks CRUD operations (household-scoped)
 export const firestoreService = {
@@ -80,7 +72,7 @@ export const firestoreService = {
     await deleteDoc(taskDoc);
   },
 
-  // Bulk save tasks (useful for initial data migration)
+  // Bulk save tasks (useful for onboarding)
   async saveTasks(householdId: string, tasks: Task[]): Promise<void> {
     const promises = tasks.map(task => this.saveTask(householdId, task));
     await Promise.all(promises);
@@ -103,41 +95,5 @@ export const firestoreService = {
     const tasksCol = getHouseholdTasksCollection(householdId);
     const snapshot = await getDocs(tasksCol);
     return !snapshot.empty;
-  },
-
-  // Legacy: check if user has tasks at old path (for migration detection)
-  async hasLegacyUserData(userId: string): Promise<boolean> {
-    const tasksCol = getUserTasksCollection(userId);
-    const snapshot = await getDocs(tasksCol);
-    return !snapshot.empty;
-  },
-
-  // Legacy: get tasks from old user-scoped path (for migration)
-  async getLegacyUserTasks(userId: string): Promise<Task[]> {
-    const tasksCol = getUserTasksCollection(userId);
-    const snapshot = await getDocs(tasksCol);
-    return snapshot.docs.map(doc => ({ ...doc.data() } as Task));
-  },
-
-  // Legacy: get settings from old user-scoped path (for migration)
-  async getLegacyUserSettings(userId: string): Promise<{ houseDescription?: string } | null> {
-    const settingsDoc = getUserSettingsDoc(userId);
-    const snapshot = await getDoc(settingsDoc);
-    return snapshot.exists() ? snapshot.data() : null;
-  },
-
-  // Legacy: delete old user-scoped tasks (after migration)
-  async deleteLegacyUserData(userId: string): Promise<void> {
-    const tasksCol = getUserTasksCollection(userId);
-    const snapshot = await getDocs(tasksCol);
-    for (const taskDoc of snapshot.docs) {
-      await deleteDoc(taskDoc.ref);
-    }
-    // Also try to delete settings
-    try {
-      await deleteDoc(getUserSettingsDoc(userId));
-    } catch (e) {
-      // Settings may not exist, that's fine
-    }
   },
 };

@@ -1,17 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { Task, Frequency, RoomType, RoomTaskTemplate } from '../types';
+import { Task, Frequency, RoomType, RoomTaskTemplate, Room } from '../types';
 import { ROOM_TASK_CATALOG, FALLBACK_TASKS } from '../constants';
 import { getNextOccurrence, isTaskDueOnDate, getToday } from '../utils/recurrence';
 import { optimizeWeeklySchedule } from '../utils/scheduler';
+import { roomService } from '../services/roomService';
 import {
   ChefHat, UtensilsCrossed, Sofa, Monitor, DoorOpen, Bath, Bed,
   ArrowRightLeft, ArrowDownToLine, Home, Plus, Minus, X, ChevronDown, ChevronRight,
-  Check, Sparkles, Loader2, ArrowUp, Pencil, Trash2,
+  Check, Sparkles, Loader2, ArrowUp, Pencil, Trash2, WashingMachine,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.FC<{ size?: number; className?: string }>> = {
   ChefHat, UtensilsCrossed, Sofa, Monitor, DoorOpen, Bath, Bed,
-  ArrowRightLeft, ArrowDownToLine, Home,
+  ArrowRightLeft, ArrowDownToLine, WashingMachine, Home,
 };
 
 const FREQ_COLORS: Record<string, string> = {
@@ -29,6 +30,7 @@ const MAIN_FLOOR_ROOMS: { roomType: RoomType; icon: string }[] = [
   { roomType: RoomType.LivingRoom, icon: 'Sofa' },
   { roomType: RoomType.Office, icon: 'Monitor' },
   { roomType: RoomType.Entryway, icon: 'DoorOpen' },
+  { roomType: RoomType.LaundryRoom, icon: 'WashingMachine' },
 ];
 
 interface SelectedRoom {
@@ -38,8 +40,8 @@ interface SelectedRoom {
 }
 
 interface OnboardingWizardProps {
+  householdId: string;
   onComplete: (tasks: Task[]) => Promise<void>;
-  onSkip: () => Promise<void>;
 }
 
 // Counter component for bedrooms/bathrooms
@@ -82,7 +84,7 @@ const ToggleSwitch: React.FC<{ enabled: boolean; onChange: (v: boolean) => void 
   </button>
 );
 
-const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onSkip }) => {
+const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ householdId, onComplete }) => {
   const [step, setStep] = useState(1);
 
   // Floor-based configuration (Step 1)
@@ -405,7 +407,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onSkip 
     };
   }, [taskSelections, selectedRooms, roomCustomTasks]);
 
-  const buildTasks = (): Task[] => {
+  const buildTasks = (roomIdMap: Map<string, string>): Task[] => {
     const today = getToday();
     const tasks: Task[] = [];
     let counter = 0;
@@ -421,13 +423,20 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onSkip 
       const catalog = ROOM_TASK_CATALOG[room.roomType];
       if (!catalog) continue;
 
+      const rKey = roomKey(room);
+      const roomId = roomIdMap.get(rKey);
+      if (!roomId) {
+        console.warn(`No roomId found for ${rKey}`);
+        continue;
+      }
+
       // Catalog tasks (with optional edited descriptions)
       for (const tmpl of catalog.tasks) {
         const key = taskKey(room, tmpl.description);
         if (!taskSelections[key]) continue;
 
         counter++;
-        const id = `${room.roomType.toLowerCase().replace(/\s+/g, '-')}-${counter}`;
+        const id = `task-${Date.now()}-${counter}-${Math.random().toString(36).substring(2, 9)}`;
         const scheduledDay = tmpl.frequency === Frequency.Monthly || tmpl.frequency === Frequency.Quarterly
           ? ((counter * 7) % 28) + 1
           : undefined;
@@ -436,6 +445,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onSkip 
 
         tasks.push({
           id,
+          roomId,
           room: room.name,
           roomType: room.roomType,
           description: editedDescriptions[key] || tmpl.description,
@@ -451,14 +461,13 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onSkip 
       }
 
       // Custom tasks added per room
-      const rKey = roomKey(room);
       const custom = roomCustomTasks[rKey] || [];
       for (const tmpl of custom) {
         const key = taskKey(room, tmpl.description);
         if (!taskSelections[key]) continue;
 
         counter++;
-        const id = `${room.roomType.toLowerCase().replace(/\s+/g, '-')}-custom-${counter}`;
+        const id = `task-${Date.now()}-${counter}-${Math.random().toString(36).substring(2, 9)}`;
         const scheduledDay = tmpl.frequency === Frequency.Monthly || tmpl.frequency === Frequency.Quarterly
           ? ((counter * 7) % 28) + 1
           : undefined;
@@ -467,6 +476,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onSkip 
 
         tasks.push({
           id,
+          roomId,
           room: room.name,
           roomType: room.roomType,
           description: tmpl.description,
@@ -501,9 +511,38 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onSkip 
   const handleComplete = async () => {
     setSaving(true);
     try {
-      const tasks = buildTasks();
+      // Step 1: Create all Room documents first
+      const roomsToProcess = [...selectedRooms];
+      const hasGeneral = selectedRooms.some(r => r.roomType === RoomType.General);
+      if (!hasGeneral) {
+        roomsToProcess.push({ roomType: RoomType.General, name: 'Whole House', isCustom: false });
+      }
+
+      const roomIdMap = new Map<string, string>();
+
+      for (const room of roomsToProcess) {
+        const catalog = ROOM_TASK_CATALOG[room.roomType];
+        if (!catalog) continue;
+
+        // Create Room document
+        const createdRoom = await roomService.createRoom(
+          householdId,
+          room.name,
+          room.roomType,
+          catalog.icon
+        );
+
+        const rKey = roomKey(room);
+        roomIdMap.set(rKey, createdRoom.id);
+      }
+
+      // Step 2: Build tasks with proper roomIds
+      const tasks = buildTasks(roomIdMap);
+
+      // Step 3: Save tasks
       await onComplete(tasks);
-    } catch {
+    } catch (error) {
+      console.error('Failed to complete onboarding:', error);
       alert('Failed to save tasks. Please try again.');
       setSaving(false);
     }
@@ -512,8 +551,42 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onSkip 
   const handleSkip = async () => {
     setSaving(true);
     try {
-      await onSkip();
-    } catch {
+      // Create Room documents for FALLBACK_TASKS
+      const fallbackRoomNames = new Set<string>();
+      const fallbackRoomTypes = new Map<string, RoomType>();
+
+      for (const task of FALLBACK_TASKS) {
+        if (!fallbackRoomNames.has(task.room)) {
+          fallbackRoomNames.add(task.room);
+          fallbackRoomTypes.set(task.room, task.roomType);
+        }
+      }
+
+      const roomIdMap = new Map<string, string>();
+
+      // Create Room documents
+      for (const roomName of fallbackRoomNames) {
+        const roomType = fallbackRoomTypes.get(roomName)!;
+        const catalog = ROOM_TASK_CATALOG[roomType];
+
+        const createdRoom = await roomService.createRoom(
+          householdId,
+          roomName,
+          roomType,
+          catalog?.icon || 'Home'
+        );
+        roomIdMap.set(roomName, createdRoom.id);
+      }
+
+      // Update FALLBACK_TASKS with proper roomIds
+      const tasksWithRoomIds: Task[] = FALLBACK_TASKS.map(task => ({
+        ...task,
+        roomId: roomIdMap.get(task.room) || '',
+      }));
+
+      await onComplete(tasksWithRoomIds);
+    } catch (error) {
+      console.error('Failed to skip onboarding:', error);
       alert('Failed to set up defaults. Please try again.');
       setSaving(false);
     }

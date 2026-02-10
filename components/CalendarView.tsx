@@ -3,6 +3,7 @@ import { Task } from '../types';
 import { isTaskDueOnDate, isOccurrenceCompleted, getToday, addDays } from '../utils/recurrence';
 import { Calendar, Clock, CheckCircle2, Circle, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { useHousehold } from '../contexts/HouseholdContext';
+import { useRooms } from '../contexts/RoomsContext';
 
 interface CalendarViewProps {
   tasks: Task[];
@@ -11,8 +12,18 @@ interface CalendarViewProps {
 
 const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onToggleTask }) => {
   const { members, getMemberByUid } = useHousehold();
+  const { getRoomById } = useRooms();
   const showAssignees = members.length > 1;
   const today = getToday();
+
+  // Helper to get room name from task
+  const getRoomName = (task: Task): string => {
+    if (task.roomId) {
+      const room = getRoomById(task.roomId);
+      return room?.name || task.room || 'General';
+    }
+    return task.room || 'General';
+  };
 
   // Track collapsed groups: "YYYY-MM-DD::RoomName"
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -62,7 +73,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onToggleTask }) => {
 
             // Group tasks by Room for this specific date
             const tasksByRoom = dayTasks.reduce((acc, task) => {
-                const roomName = task.room || 'General';
+                const roomName = getRoomName(task);
                 if (!acc[roomName]) acc[roomName] = [];
                 acc[roomName].push(task);
                 return acc;

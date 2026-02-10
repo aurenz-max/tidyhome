@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { type User } from 'firebase/auth';
 import { authService } from '../services/authService';
 import { profileService } from '../services/profileService';
-import { migrateDefaultUserTasks } from '../services/migrationService';
 
 interface AuthContextType {
   user: User | null;
@@ -43,9 +42,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       firebaseUser.displayName || undefined,
       firebaseUser.photoURL || undefined,
     );
-
-    // Attempt to migrate default-user tasks for the first real user
-    await migrateDefaultUserTasks(firebaseUser.uid);
   };
 
   const signUp = async (email: string, password: string, displayName?: string) => {

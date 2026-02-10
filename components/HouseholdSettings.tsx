@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useHousehold } from '../contexts/HouseholdContext';
 import { useAuth } from '../contexts/AuthContext';
-import { X, Copy, RefreshCw, UserMinus, LogOut, Check, Shield, User } from 'lucide-react';
+import { X, Copy, RefreshCw, UserMinus, LogOut, Check, Shield, User, UserPlus } from 'lucide-react';
 
 interface HouseholdSettingsProps {
   isOpen: boolean;
@@ -10,11 +10,13 @@ interface HouseholdSettingsProps {
 
 const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
-  const { household, members, isAdmin, removeMember, leaveHousehold, regenerateInviteCode } = useHousehold();
+  const { household, members, isAdmin, removeMember, leaveHousehold, regenerateInviteCode, addLocalMember } = useHousehold();
   const [copied, setCopied] = useState(false);
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMemberName, setNewMemberName] = useState('');
 
   if (!isOpen || !household) return null;
 
@@ -61,6 +63,20 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
       onClose();
     } catch (err) {
       console.error('Failed to leave household:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddMember = async () => {
+    if (!newMemberName.trim()) return;
+    setLoading(true);
+    try {
+      await addLocalMember(newMemberName.trim());
+      setNewMemberName('');
+      setShowAddMember(false);
+    } catch (err) {
+      console.error('Failed to add member:', err);
     } finally {
       setLoading(false);
     }
@@ -127,9 +143,63 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
 
           {/* Members Section */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">
-              Members ({members.length})
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                Members ({members.length})
+              </h3>
+              {isAdmin && !showAddMember && (
+                <button
+                  onClick={() => setShowAddMember(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors"
+                >
+                  <UserPlus size={14} />
+                  Add Member
+                </button>
+              )}
+            </div>
+
+            {/* Add Member Form */}
+            {isAdmin && showAddMember && (
+              <div className="mb-3 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newMemberName}
+                    onChange={(e) => setNewMemberName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddMember();
+                      if (e.key === 'Escape') {
+                        setShowAddMember(false);
+                        setNewMemberName('');
+                      }
+                    }}
+                    placeholder="Member name..."
+                    className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleAddMember}
+                    disabled={!newMemberName.trim() || loading}
+                    className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Check size={16} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddMember(false);
+                      setNewMemberName('');
+                    }}
+                    className="px-3 py-1.5 border border-slate-300 text-slate-600 text-sm rounded-lg hover:bg-slate-100 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Add household members who don't have accounts. They can be assigned to tasks.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               {sortedMembers.map((member) => (
                 <div
@@ -162,8 +232,15 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
                             <Shield size={10} /> Admin
                           </span>
                         )}
+                        {member.uid.startsWith('local-') && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-semibold rounded">
+                            <User size={10} /> Guest
+                          </span>
+                        )}
                       </div>
-                      <p className="text-xs text-slate-400">{member.email}</p>
+                      {member.email && (
+                        <p className="text-xs text-slate-400">{member.email}</p>
+                      )}
                     </div>
                   </div>
 

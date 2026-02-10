@@ -1,15 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { Task, RoomType, RoomTaskTemplate } from '../types';
 import { ROOM_TASK_CATALOG } from '../constants';
+import { useRooms } from '../contexts/RoomsContext';
 import {
   ChefHat, UtensilsCrossed, Sofa, Monitor, DoorOpen, Bath, Bed,
   ArrowRightLeft, ArrowDownToLine, Home, X, Pencil, Trash2, Plus,
-  Check, ChevronLeft, Loader2,
+  Check, ChevronLeft, Loader2, WashingMachine,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.FC<{ size?: number; className?: string }>> = {
   ChefHat, UtensilsCrossed, Sofa, Monitor, DoorOpen, Bath, Bed,
-  ArrowRightLeft, ArrowDownToLine, Home,
+  ArrowRightLeft, ArrowDownToLine, WashingMachine, Home,
 };
 
 interface RoomManagerProps {
@@ -17,11 +18,12 @@ interface RoomManagerProps {
   onClose: () => void;
   tasks: Task[];
   onAddRoom: (roomName: string, roomType: RoomType, seedTasks: RoomTaskTemplate[]) => Promise<void>;
-  onRenameRoom: (oldName: string, newName: string) => Promise<void>;
-  onDeleteRoom: (roomName: string) => Promise<void>;
+  onRenameRoom: (roomId: string, newName: string) => Promise<void>;
+  onDeleteRoom: (roomId: string) => Promise<void>;
 }
 
 const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAddRoom, onRenameRoom, onDeleteRoom }) => {
+  const { rooms: roomsFromContext } = useRooms();
   const [mode, setMode] = useState<'list' | 'add'>('list');
   const [editingRoom, setEditingRoom] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -34,23 +36,19 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
   const [selectedSeedTasks, setSelectedSeedTasks] = useState<Record<number, boolean>>({});
   const [nameError, setNameError] = useState('');
 
+  // Use rooms from context and add task counts
   const rooms = useMemo(() => {
-    const roomMap = new Map<string, { roomType: RoomType; taskCount: number }>();
-    for (const task of tasks) {
-      if (!roomMap.has(task.room)) {
-        roomMap.set(task.room, { roomType: task.roomType, taskCount: 0 });
-      }
-      roomMap.get(task.room)!.taskCount++;
-    }
-    return Array.from(roomMap.entries())
-      .map(([name, info]) => ({
-        name,
-        roomType: info.roomType,
-        taskCount: info.taskCount,
-        icon: ROOM_TASK_CATALOG[info.roomType]?.icon || 'Home',
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [tasks]);
+    return roomsFromContext.map(room => {
+      const taskCount = tasks.filter(t => t.roomId === room.id).length;
+      return {
+        id: room.id,
+        name: room.name,
+        roomType: room.roomType,
+        taskCount,
+        icon: room.icon,
+      };
+    });
+  }, [roomsFromContext, tasks]);
 
   const existingRoomNames = useMemo(() => new Set(rooms.map(r => r.name)), [rooms]);
 
@@ -103,15 +101,18 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
     }
   };
 
-  const handleStartRename = (roomName: string) => {
-    setEditingRoom(roomName);
-    setEditValue(roomName);
+  const handleStartRename = (roomId: string, currentName: string) => {
+    setEditingRoom(roomId);
+    setEditValue(currentName);
   };
 
   const handleCommitRename = async () => {
     if (!editingRoom) return;
+    const room = rooms.find(r => r.id === editingRoom);
+    if (!room) return;
+
     const trimmed = editValue.trim();
-    if (!trimmed || trimmed === editingRoom) {
+    if (!trimmed || trimmed === room.name) {
       setEditingRoom(null);
       return;
     }
@@ -127,10 +128,10 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
     }
   };
 
-  const handleDelete = async (roomName: string) => {
+  const handleDelete = async (roomId: string) => {
     setSaving(true);
     try {
-      await onDeleteRoom(roomName);
+      await onDeleteRoom(roomId);
     } finally {
       setSaving(false);
       setDeletingRoom(null);
@@ -175,17 +176,17 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
                 <div className="space-y-1">
                   {rooms.map(room => {
                     const IconComp = ICON_MAP[room.icon] || Home;
-                    const isDeleting = deletingRoom === room.name;
+                    const isDeleting = deletingRoom === room.id;
 
                     return (
-                      <div key={room.name} className="group">
+                      <div key={room.id} className="group">
                         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
                           <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
                             <IconComp size={16} className="text-teal-600" />
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            {editingRoom === room.name ? (
+                            {editingRoom === room.id ? (
                               <input
                                 autoFocus
                                 value={editValue}
@@ -203,17 +204,17 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
                             <p className="text-xs text-slate-400">{room.taskCount} task{room.taskCount !== 1 ? 's' : ''}</p>
                           </div>
 
-                          {editingRoom !== room.name && !isDeleting && (
+                          {editingRoom !== room.id && !isDeleting && (
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
-                                onClick={() => handleStartRename(room.name)}
+                                onClick={() => handleStartRename(room.id, room.name)}
                                 className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors"
                                 title="Rename"
                               >
                                 <Pencil size={14} className="text-slate-400" />
                               </button>
                               <button
-                                onClick={() => setDeletingRoom(room.name)}
+                                onClick={() => setDeletingRoom(room.id)}
                                 className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
                                 title="Delete"
                               >
@@ -234,7 +235,7 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
                               Cancel
                             </button>
                             <button
-                              onClick={() => handleDelete(room.name)}
+                              onClick={() => handleDelete(room.id)}
                               disabled={saving}
                               className="px-2 py-1 text-xs text-white bg-red-500 hover:bg-red-600 rounded transition-colors disabled:opacity-50"
                             >

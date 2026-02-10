@@ -14,6 +14,7 @@ import { generateSmartSchedule } from './services/geminiService';
 import { useTasks } from './hooks/useTasks';
 import { useAuth } from './contexts/AuthContext';
 import { useHousehold } from './contexts/HouseholdContext';
+import { RoomsProvider } from './contexts/RoomsContext';
 import { isTaskDueOnDate, isOccurrenceCompleted, getNextOccurrence, getToday } from './utils/recurrence';
 import { optimizeWeeklySchedule } from './utils/scheduler';
 import { Sparkles, Info, Loader2 } from 'lucide-react';
@@ -173,7 +174,8 @@ const App: React.FC = () => {
       const taskToSave: any = {
         id: taskData.id || `task-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
         description: taskData.description || '',
-        room: taskData.room || '',
+        roomId: taskData.roomId || '',
+        room: taskData.room || '', // Keep for backward compatibility
         roomType: taskData.roomType || RoomType.General,
         frequency,
         estimatedMinutes: taskData.estimatedMinutes || 15,
@@ -235,13 +237,11 @@ const App: React.FC = () => {
   }
 
   // Show onboarding wizard for first-time households
-  if (needsOnboarding) {
+  if (needsOnboarding && household?.id) {
     return (
       <OnboardingWizard
+        householdId={household.id}
         onComplete={completeOnboarding}
-        onSkip={async () => {
-          await completeOnboarding(FALLBACK_TASKS);
-        }}
       />
     );
   }
@@ -259,80 +259,82 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 pb-20">
-      <Header
-        onGenerate={handleGenerateSchedule}
-        onBalance={handleBalanceSchedule}
-        isGenerating={isLoading}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        userName={user.displayName || user.email || 'User'}
-        onSignOut={signOut}
-        onManageRooms={() => setShowRoomManager(true)}
-        householdName={household.name}
-        onManageHousehold={() => setShowHouseholdSettings(true)}
-        memberCount={members.length}
-      />
+    <RoomsProvider householdId={household.id}>
+      <div className="min-h-screen bg-slate-50 text-slate-800 pb-20">
+        <Header
+          onGenerate={handleGenerateSchedule}
+          onBalance={handleBalanceSchedule}
+          isGenerating={isLoading}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          userName={user.displayName || user.email || 'User'}
+          onSignOut={signOut}
+          onManageRooms={() => setShowRoomManager(true)}
+          householdName={household.name}
+          onManageHousehold={() => setShowHouseholdSettings(true)}
+          memberCount={members.length}
+        />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* Welcome / Context Banner */}
-        <div className="mb-8">
-            <h2 className="text-2xl font-bold text-slate-900">Welcome Home</h2>
-            <p className="text-slate-500 mt-1">
-              {members.length > 1
-                ? `${household.name} - ${members.length} members keeping it tidy.`
-                : 'Keep your home fresh and tidy.'
-              }
-            </p>
+          {/* Welcome / Context Banner */}
+          <div className="mb-8">
+              <h2 className="text-2xl font-bold text-slate-900">Welcome Home</h2>
+              <p className="text-slate-500 mt-1">
+                {members.length > 1
+                  ? `${household.name} - ${members.length} members keeping it tidy.`
+                  : 'Keep your home fresh and tidy.'
+                }
+              </p>
 
-            {aiAnalysis && (
-                <div className="mt-4 bg-teal-50 border border-teal-100 rounded-lg p-4 flex items-start animate-fade-in">
-                    <Sparkles className="text-teal-600 mt-0.5 mr-3 flex-shrink-0" size={18} />
-                    <div>
-                        <h4 className="font-semibold text-teal-800 text-sm mb-1">AI Optimized Schedule</h4>
-                        <p className="text-sm text-teal-700 leading-relaxed">{aiAnalysis}</p>
-                    </div>
-                </div>
-            )}
-        </div>
+              {aiAnalysis && (
+                  <div className="mt-4 bg-teal-50 border border-teal-100 rounded-lg p-4 flex items-start animate-fade-in">
+                      <Sparkles className="text-teal-600 mt-0.5 mr-3 flex-shrink-0" size={18} />
+                      <div>
+                          <h4 className="font-semibold text-teal-800 text-sm mb-1">AI Optimized Schedule</h4>
+                          <p className="text-sm text-teal-700 leading-relaxed">{aiAnalysis}</p>
+                      </div>
+                  </div>
+              )}
+          </div>
 
-        {/* Dashboard Stats */}
-        {viewMode === 'rooms' && <StatsOverview tasks={tasks} members={members} />}
+          {/* Dashboard Stats */}
+          {viewMode === 'rooms' && <StatsOverview tasks={tasks} members={members} />}
 
-        {/* Views */}
-        {viewMode === 'rooms' ? (
-             <TaskList tasks={tasks} onToggleTask={handleToggleTask} onSaveTask={handleSaveTask} onDeleteTask={deleteTask} />
-        ) : (
-             <CalendarView tasks={tasks} onToggleTask={handleToggleTask} />
-        )}
+          {/* Views */}
+          {viewMode === 'rooms' ? (
+               <TaskList tasks={tasks} onToggleTask={handleToggleTask} onSaveTask={handleSaveTask} onDeleteTask={deleteTask} />
+          ) : (
+               <CalendarView tasks={tasks} onToggleTask={handleToggleTask} />
+          )}
 
 
-        {!aiAnalysis && tasks.length === FALLBACK_TASKS.length && viewMode === 'rooms' && (
-             <div className="mt-8 p-4 bg-blue-50 text-blue-800 rounded-lg flex items-center border border-blue-100">
-                <Info className="mr-3" size={20} />
-                <p className="text-sm">
-                    <strong>Tip:</strong> Click "AI Optimize" to generate a full, personalized schedule, or use "Calendar" view to see what's coming up.
-                </p>
-            </div>
-        )}
+          {!aiAnalysis && tasks.length === FALLBACK_TASKS.length && viewMode === 'rooms' && (
+               <div className="mt-8 p-4 bg-blue-50 text-blue-800 rounded-lg flex items-center border border-blue-100">
+                  <Info className="mr-3" size={20} />
+                  <p className="text-sm">
+                      <strong>Tip:</strong> Click "AI Optimize" to generate a full, personalized schedule, or use "Calendar" view to see what's coming up.
+                  </p>
+              </div>
+          )}
 
-      </main>
+        </main>
 
-      <RoomManager
-        isOpen={showRoomManager}
-        onClose={() => setShowRoomManager(false)}
-        tasks={tasks}
-        onAddRoom={addRoom}
-        onRenameRoom={renameRoom}
-        onDeleteRoom={deleteRoom}
-      />
+        <RoomManager
+          isOpen={showRoomManager}
+          onClose={() => setShowRoomManager(false)}
+          tasks={tasks}
+          onAddRoom={addRoom}
+          onRenameRoom={renameRoom}
+          onDeleteRoom={deleteRoom}
+        />
 
-      <HouseholdSettings
-        isOpen={showHouseholdSettings}
-        onClose={() => setShowHouseholdSettings(false)}
-      />
-    </div>
+        <HouseholdSettings
+          isOpen={showHouseholdSettings}
+          onClose={() => setShowHouseholdSettings(false)}
+        />
+      </div>
+    </RoomsProvider>
   );
 };
 

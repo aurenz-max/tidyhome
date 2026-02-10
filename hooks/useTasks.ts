@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Task, RoomType, Frequency, RoomTaskTemplate } from '../types';
 import { firestoreService } from '../services/firestoreService';
+import { roomService } from '../services/roomService';
 import { FALLBACK_TASKS } from '../constants';
 import { migrateTaskToRecurrence, needsMigration } from '../utils/migration';
 import { optimizeWeeklySchedule } from '../utils/scheduler';
@@ -9,6 +10,24 @@ import { getNextOccurrence, isTaskDueOnDate, getToday } from '../utils/recurrenc
 const MIGRATION_KEY = 'tidyhome_schema_v2';
 
 const noop = async () => {};
+
+// Helper function to get default icon for room type
+function getDefaultIconForRoomType(roomType: RoomType): string {
+  const iconMap: Record<RoomType, string> = {
+    [RoomType.Kitchen]: 'ChefHat',
+    [RoomType.DiningRoom]: 'Utensils',
+    [RoomType.LivingRoom]: 'Sofa',
+    [RoomType.Office]: 'Laptop',
+    [RoomType.Entryway]: 'DoorOpen',
+    [RoomType.Bathroom]: 'Bath',
+    [RoomType.Bedroom]: 'BedDouble',
+    [RoomType.Hallway]: 'ArrowRight',
+    [RoomType.Basement]: 'ArrowDown',
+    [RoomType.LaundryRoom]: 'WashingMachine',
+    [RoomType.General]: 'Home',
+  };
+  return iconMap[roomType] || 'Home';
+}
 
 export function useTasks(householdId: string | null) {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -116,9 +135,13 @@ export function useTasks(householdId: string | null) {
     }
   };
 
-  const addRoom = async (roomName: string, roomType: RoomType, seedTasks: RoomTaskTemplate[]) => {
+  const addRoom = async (roomName: string, roomType: RoomType, seedTasks: RoomTaskTemplate[], icon?: string) => {
     if (!householdId) return;
     const today = getToday();
+
+    // Create the Room document first
+    const roomIcon = icon || getDefaultIconForRoomType(roomType);
+    const room = await roomService.createRoom(householdId, roomName, roomType, roomIcon);
 
     const newTasks: Task[] = seedTasks.map((tmpl, i) => {
       const id = `${roomType.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}-${i}`;
@@ -130,7 +153,8 @@ export function useTasks(householdId: string | null) {
 
       return {
         id,
-        room: roomName,
+        roomId: room.id,
+        room: roomName, // Keep for backward compatibility during transition
         roomType,
         description: tmpl.description,
         frequency: tmpl.frequency,
@@ -159,20 +183,30 @@ export function useTasks(householdId: string | null) {
     await firestoreService.saveTasks(householdId, newTasks);
   };
 
-  const renameRoom = async (oldName: string, newName: string) => {
+  const renameRoom = async (roomId: string, newName: string) => {
     if (!householdId) return;
-    const roomTasks = tasks.filter(t => t.room === oldName);
+
+    // Update the Room document
+    await roomService.updateRoom(householdId, roomId, { name: newName });
+
+    // Update all tasks that reference this room (for backward compatibility)
+    const roomTasks = tasks.filter(t => t.roomId === roomId);
     for (const task of roomTasks) {
       await firestoreService.updateTask(householdId, task.id, { room: newName });
     }
   };
 
-  const deleteRoom = async (roomName: string) => {
+  const deleteRoom = async (roomId: string) => {
     if (!householdId) return;
-    const roomTasks = tasks.filter(t => t.room === roomName);
+
+    // Delete all tasks in this room
+    const roomTasks = tasks.filter(t => t.roomId === roomId);
     for (const task of roomTasks) {
       await firestoreService.deleteTask(householdId, task.id);
     }
+
+    // Delete the Room document
+    await roomService.deleteRoom(householdId, roomId);
   };
 
   return {

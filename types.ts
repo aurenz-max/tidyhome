@@ -16,12 +16,14 @@ export enum RoomType {
   Bedroom = 'Bedroom',
   Hallway = 'Hallway',
   Basement = 'Basement',
+  LaundryRoom = 'Laundry Room',
   General = 'General'
 }
 
 export interface Task {
   id: string;
-  room: string;
+  roomId: string; // Reference to Room.id
+  room: string; // DEPRECATED: kept for backward compatibility during migration
   roomType: RoomType;
   description: string;
   frequency: Frequency;
@@ -90,4 +92,14 @@ export interface HouseholdMember {
   photoURL?: string;
   role: 'admin' | 'member';
   joinedAt: string;
+}
+
+export interface Room {
+  id: string;
+  householdId: string;
+  name: string;
+  roomType: RoomType;
+  icon: string; // Lucide icon name
+  order: number; // For custom sorting
+  createdAt: string;
 }
