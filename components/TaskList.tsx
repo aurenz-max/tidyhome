@@ -34,6 +34,24 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
     return task.room || 'General';
   };
 
+  // Helper to format scheduled day
+  const formatScheduledDay = (task: Task): string | null => {
+    if (task.scheduledDay === undefined) return null;
+
+    if (task.frequency === Frequency.Weekly || task.frequency === Frequency.BiWeekly) {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      return days[task.scheduledDay];
+    }
+
+    if (task.frequency === Frequency.Monthly || task.frequency === Frequency.Quarterly) {
+      const day = task.scheduledDay;
+      const suffix = day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th';
+      return `${day}${suffix}`;
+    }
+
+    return null;
+  };
+
   // Get unique rooms for filter tabs
   const rooms = useMemo(() => {
     // Safety check for task.roomType in case of malformed data
@@ -231,6 +249,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
                                         <span className="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
                                             {task.frequency}
                                         </span>
+                                        {formatScheduledDay(task) && (
+                                            <span className="bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-200 font-medium">
+                                                {formatScheduledDay(task)}
+                                            </span>
+                                        )}
                                         {task.priority === 'High' && (
                                             <span className="flex items-center text-amber-600 font-medium">
                                                 <AlertCircle size={12} className="mr-1" />

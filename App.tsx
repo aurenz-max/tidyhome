@@ -8,6 +8,7 @@ import OnboardingWizard from './components/OnboardingWizard';
 import RoomManager from './components/RoomManager';
 import HouseholdSetup from './components/HouseholdSetup';
 import HouseholdSettings from './components/HouseholdSettings';
+import BulkScheduler from './components/BulkScheduler';
 import { Task, Frequency, RoomType } from './types';
 import { FALLBACK_TASKS } from './constants';
 import { generateSmartSchedule } from './services/geminiService';
@@ -29,6 +30,7 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'rooms' | 'calendar'>('rooms');
   const [showRoomManager, setShowRoomManager] = useState(false);
   const [showHouseholdSettings, setShowHouseholdSettings] = useState(false);
+  const [showBulkScheduler, setShowBulkScheduler] = useState(false);
 
   // Daily reset: prune old completedDates, recompute isCompleted
   useEffect(() => {
@@ -202,6 +204,32 @@ const App: React.FC = () => {
     }
   };
 
+  const handleBulkSchedulerSave = async (updates: Map<string, { scheduledDay?: number; assignedTo?: string }>) => {
+    try {
+      const today = getToday();
+
+      // Apply all updates
+      for (const [taskId, update] of updates.entries()) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+          const updatedTask = {
+            ...task,
+            scheduledDay: update.scheduledDay !== undefined ? update.scheduledDay : task.scheduledDay,
+            assignedTo: update.assignedTo !== undefined ? update.assignedTo : task.assignedTo,
+          };
+          await updateTask(taskId, {
+            scheduledDay: updatedTask.scheduledDay,
+            assignedTo: updatedTask.assignedTo || undefined,
+            nextDueDate: getNextOccurrence(updatedTask, today),
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to apply bulk changes", error);
+      throw error;
+    }
+  };
+
   // Show loading state while checking auth
   if (authLoading) {
     return (
@@ -264,6 +292,7 @@ const App: React.FC = () => {
         <Header
           onGenerate={handleGenerateSchedule}
           onBalance={handleBalanceSchedule}
+          onOpenScheduler={() => setShowBulkScheduler(true)}
           isGenerating={isLoading}
           viewMode={viewMode}
           setViewMode={setViewMode}
@@ -332,6 +361,13 @@ const App: React.FC = () => {
         <HouseholdSettings
           isOpen={showHouseholdSettings}
           onClose={() => setShowHouseholdSettings(false)}
+        />
+
+        <BulkScheduler
+          isOpen={showBulkScheduler}
+          onClose={() => setShowBulkScheduler(false)}
+          tasks={tasks}
+          onSaveBulkChanges={handleBulkSchedulerSave}
         />
       </div>
     </RoomsProvider>

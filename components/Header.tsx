@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Sparkles, Calendar as CalendarIcon, List, Scale, LogOut, UserCircle, Settings, Users } from 'lucide-react';
+import { Home, Sparkles, Calendar as CalendarIcon, List, Scale, LogOut, UserCircle, Settings, Users, ClipboardList } from 'lucide-react';
 
 interface HeaderProps {
   onGenerate: () => void;
   onBalance: () => void;
+  onOpenScheduler: () => void;
   isGenerating: boolean;
   viewMode: 'rooms' | 'calendar';
   setViewMode: (mode: 'rooms' | 'calendar') => void;
@@ -15,7 +16,7 @@ interface HeaderProps {
   memberCount?: number;
 }
 
-const Header: React.FC<HeaderProps> = ({ onGenerate, onBalance, isGenerating, viewMode, setViewMode, userName, onSignOut, onManageRooms, householdName, onManageHousehold, memberCount }) => {
+const Header: React.FC<HeaderProps> = ({ onGenerate, onBalance, onOpenScheduler, isGenerating, viewMode, setViewMode, userName, onSignOut, onManageRooms, householdName, onManageHousehold, memberCount }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +90,14 @@ const Header: React.FC<HeaderProps> = ({ onGenerate, onBalance, isGenerating, vi
                 </button>
             </div>
 
+            <button
+              onClick={onOpenScheduler}
+              className="flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-white text-purple-600 border border-purple-200 hover:bg-purple-50 hover:border-purple-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            >
+              <ClipboardList size={16} className="mr-2" />
+              <span className="hidden sm:inline">Schedule</span>
+            </button>
+
             {viewMode === 'calendar' && (
                  <button
                  onClick={onBalance}
@@ -100,7 +109,8 @@ const Header: React.FC<HeaderProps> = ({ onGenerate, onBalance, isGenerating, vi
                  }`}
                >
                  <Scale size={16} className={`mr-2 ${isGenerating ? 'animate-pulse' : ''}`} />
-                 Load Balance
+                 <span className="hidden sm:inline">Load Balance</span>
+                 <span className="sm:hidden">Balance</span>
                </button>
             )}
 
