@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, Loader2, AlertCircle } from 'lucide-react';
+import { householdService } from '../services/householdService';
+import { Home, Loader2, AlertCircle, Users } from 'lucide-react';
 
 const AuthForm: React.FC = () => {
   const { signUp, signIn, signInWithGoogle } = useAuth();
@@ -10,6 +11,30 @@ const AuthForm: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [inviteHouseholdName, setInviteHouseholdName] = useState<string | null>(null);
+
+  // Check URL for invite code on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) {
+      const upperCode = code.toUpperCase();
+      setInviteCode(upperCode);
+      setMode('signup'); // Default to signup for invite links
+
+      // Look up household name
+      householdService.findHouseholdByInviteCode(upperCode)
+        .then(household => {
+          if (household) {
+            setInviteHouseholdName(household.name);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to lookup invite code:', err);
+        });
+    }
+  }, []);
 
   const switchMode = (newMode: 'signin' | 'signup') => {
     setMode(newMode);
@@ -31,6 +56,11 @@ const AuthForm: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      // Store invite code before auth (to be processed after auth completes)
+      if (inviteCode) {
+        sessionStorage.setItem('pendingInviteCode', inviteCode);
+      }
+
       if (mode === 'signup') {
         await signUp(email, password, displayName || undefined);
       } else {
@@ -38,6 +68,8 @@ const AuthForm: React.FC = () => {
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
+      // Clear pending invite on error
+      sessionStorage.removeItem('pendingInviteCode');
     } finally {
       setIsSubmitting(false);
     }
@@ -47,9 +79,16 @@ const AuthForm: React.FC = () => {
     setError(null);
     setIsSubmitting(true);
     try {
+      // Store invite code before auth (to be processed after auth completes)
+      if (inviteCode) {
+        sessionStorage.setItem('pendingInviteCode', inviteCode);
+      }
+
       await signInWithGoogle();
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
+      // Clear pending invite on error
+      sessionStorage.removeItem('pendingInviteCode');
     } finally {
       setIsSubmitting(false);
     }
@@ -66,6 +105,24 @@ const AuthForm: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-800">TidyHome AI</h1>
           <p className="text-slate-500 mt-1">Smart Maintenance for Busy Families</p>
         </div>
+
+        {/* Invite Banner */}
+        {inviteCode && inviteHouseholdName && (
+          <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-start gap-3">
+            <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <Users size={20} />
+            </div>
+            <div>
+              <h3 className="font-semibold text-indigo-900 mb-1">You're invited!</h3>
+              <p className="text-sm text-indigo-700">
+                Join <strong>{inviteHouseholdName}</strong> and start managing tasks together.
+              </p>
+              <p className="text-xs text-indigo-600 mt-1">
+                Sign up or sign in to accept this invitation.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Card */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">

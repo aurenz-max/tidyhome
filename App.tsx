@@ -32,6 +32,24 @@ const App: React.FC = () => {
   const [showHouseholdSettings, setShowHouseholdSettings] = useState(false);
   const [showBulkScheduler, setShowBulkScheduler] = useState(false);
 
+  // Debug: Log user and household state
+  useEffect(() => {
+    console.log('[App] User state:', {
+      userId: user?.uid,
+      email: user?.email,
+      displayName: user?.displayName,
+    });
+  }, [user]);
+
+  useEffect(() => {
+    console.log('[App] Household state:', {
+      householdId: household?.id,
+      householdName: household?.name,
+      memberCount: members.length,
+      members: members.map(m => ({ uid: m.uid, displayName: m.displayName, role: m.role })),
+    });
+  }, [household, members]);
+
   // Daily reset: prune old completedDates, recompute isCompleted
   useEffect(() => {
     const checkAndResetDaily = async () => {
@@ -81,8 +99,26 @@ const App: React.FC = () => {
         isCompleted: isOccurrenceCompleted(task, today),
       }));
       setTasks(refreshedTasks);
+
+      // Debug: Log current user's assigned tasks
+      if (user) {
+        const myTasks = refreshedTasks.filter(t => t.assignedTo === user.uid);
+        console.log('[App] Current user assigned tasks:', {
+          userId: user.uid,
+          totalTasks: refreshedTasks.length,
+          myTasksCount: myTasks.length,
+          myTasks: myTasks.map(t => ({
+            id: t.id,
+            name: t.name,
+            assignedTo: t.assignedTo,
+            isDue: t.isDue,
+            isCompleted: t.isCompleted,
+            frequency: t.frequency,
+          })),
+        });
+      }
     }
-  }, [firestoreTasks, firestoreLoading]);
+  }, [firestoreTasks, firestoreLoading, user]);
 
   // Load AI analysis from localStorage
   useEffect(() => {

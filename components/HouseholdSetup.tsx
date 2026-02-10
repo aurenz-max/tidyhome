@@ -6,13 +6,22 @@ import { Home, Users, ArrowRight, Loader2, AlertCircle, LogOut } from 'lucide-re
 
 const HouseholdSetup: React.FC = () => {
   const { createHousehold, joinHousehold } = useHousehold();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [mode, setMode] = useState<'choose' | 'create' | 'join'>('choose');
   const [householdName, setHouseholdName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [foundHousehold, setFoundHousehold] = useState<{ id: string; name: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[HouseholdSetup] Current user:', {
+      uid: user?.uid,
+      email: user?.email,
+      displayName: user?.displayName,
+    });
+  }, [user]);
 
   // Check URL for invite code on mount
   useEffect(() => {
@@ -43,14 +52,17 @@ const HouseholdSetup: React.FC = () => {
     setLoading(true);
     setError('');
     setFoundHousehold(null);
+    console.log('[HouseholdSetup] Looking up invite code:', inviteCode.toUpperCase());
     try {
       const household = await householdService.findHouseholdByInviteCode(inviteCode.toUpperCase());
+      console.log('[HouseholdSetup] Lookup result:', household);
       if (household) {
         setFoundHousehold({ id: household.id, name: household.name });
       } else {
         setError('No household found with that code. Please check and try again.');
       }
     } catch (err: any) {
+      console.error('[HouseholdSetup] Lookup error:', err);
       setError(err.message || 'Failed to look up code');
     } finally {
       setLoading(false);
@@ -60,9 +72,17 @@ const HouseholdSetup: React.FC = () => {
   const handleJoin = async () => {
     setLoading(true);
     setError('');
+    console.log('[HouseholdSetup] Attempting to join household:', {
+      inviteCode: inviteCode.toUpperCase(),
+      householdId: foundHousehold?.id,
+      householdName: foundHousehold?.name,
+      currentUser: user?.uid,
+    });
     try {
       await joinHousehold(inviteCode.toUpperCase());
+      console.log('[HouseholdSetup] Successfully joined household');
     } catch (err: any) {
+      console.error('[HouseholdSetup] Join error:', err);
       setError(err.message || 'Failed to join household');
     } finally {
       setLoading(false);

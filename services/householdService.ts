@@ -73,24 +73,42 @@ export const householdService = {
   },
 
   async findHouseholdByInviteCode(code: string): Promise<Household | null> {
+    console.log('[householdService] Finding household by invite code:', code.toUpperCase());
     const q = query(
       collection(db, 'households'),
       where('inviteCode', '==', code.toUpperCase())
     );
     const snapshot = await getDocs(q);
+    console.log('[householdService] Query results:', {
+      empty: snapshot.empty,
+      size: snapshot.size,
+      households: snapshot.docs.map(d => ({ id: d.id, name: d.data().name })),
+    });
     if (snapshot.empty) return null;
     return snapshot.docs[0].data() as Household;
   },
 
   async joinHousehold(userId: string, householdId: string): Promise<void> {
+    console.log('[householdService] Starting joinHousehold:', { userId, householdId });
+
     const profile = await profileService.getProfile(userId);
     const currentUser = auth.currentUser;
+    console.log('[householdService] User profile and auth:', {
+      profile,
+      currentUser: {
+        uid: currentUser?.uid,
+        email: currentUser?.email,
+        displayName: currentUser?.displayName,
+      },
+    });
 
     // Add user to household memberUids
+    console.log('[householdService] Step 1: Adding user to household memberUids');
     const householdRef = doc(db, 'households', householdId);
     await updateDoc(householdRef, {
       memberUids: arrayUnion(userId),
     });
+    console.log('[householdService] Step 1: Complete - user added to memberUids');
 
     // Create member subdocument with proper name fallback chain
     const displayName = profile?.displayName
@@ -111,10 +129,16 @@ export const householdService = {
     for (const [key, value] of Object.entries(member)) {
       if (value !== undefined) cleanMember[key] = value;
     }
+
+    console.log('[householdService] Step 2: Creating member document:', cleanMember);
     await setDoc(doc(db, `households/${householdId}/members`, userId), cleanMember);
+    console.log('[householdService] Step 2: Complete - member document created');
 
     // Update user profile
+    console.log('[householdService] Step 3: Updating user profile with householdId');
     await profileService.updateProfile(userId, { householdId });
+    console.log('[householdService] Step 3: Complete - profile updated');
+    console.log('[householdService] joinHousehold complete');
   },
 
   async leaveHousehold(userId: string, householdId: string): Promise<void> {

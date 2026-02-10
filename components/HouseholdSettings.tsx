@@ -103,12 +103,41 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Invite Code Section */}
+          {/* Invite Section */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Invite Code</h3>
-            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-2xl font-mono font-bold tracking-[0.3em] text-slate-800">
+            <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Invite Members</h3>
+
+            {/* Invite Link */}
+            <div className="bg-gradient-to-br from-indigo-50 to-teal-50 rounded-lg p-4 border border-indigo-200 mb-3">
+              <p className="text-xs font-medium text-slate-600 mb-2">Share this link:</p>
+              <div className="bg-white rounded-lg p-3 border border-slate-200 mb-3">
+                <p className="text-xs font-mono text-slate-600 break-all">
+                  {`${window.location.origin}${window.location.pathname}?code=${household.inviteCode}`}
+                </p>
+              </div>
+              <button
+                onClick={handleCopyLink}
+                className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+              >
+                {copied ? (
+                  <>
+                    <Check size={16} />
+                    Link Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy size={16} />
+                    Copy Invite Link
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Invite Code (for manual entry) */}
+            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+              <p className="text-xs font-medium text-slate-600 mb-2">Or share this code:</p>
+              <div className="flex items-center justify-between">
+                <span className="text-xl font-mono font-bold tracking-[0.3em] text-slate-800">
                   {household.inviteCode}
                 </span>
                 <div className="flex gap-2">
@@ -117,7 +146,7 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
                     className="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5"
                   >
                     {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                    {copied ? 'Copied!' : 'Copy'}
+                    Code
                   </button>
                   {isAdmin && (
                     <button
@@ -127,17 +156,11 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
                       title="Generate a new invite code"
                     >
                       <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-                      New Code
+                      New
                     </button>
                   )}
                 </div>
               </div>
-              <button
-                onClick={handleCopyLink}
-                className="w-full text-center text-xs text-teal-600 hover:text-teal-700 font-medium"
-              >
-                Copy invite link
-              </button>
             </div>
           </div>
 

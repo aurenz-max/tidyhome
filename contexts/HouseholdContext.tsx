@@ -48,23 +48,50 @@ export const HouseholdProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     async function init() {
       try {
+        console.log('[HouseholdContext] Initializing for user:', user!.uid);
         const profile = await profileService.getProfile(user!.uid);
-        const householdId = profile?.householdId;
+        console.log('[HouseholdContext] User profile:', profile);
+        let householdId = profile?.householdId;
+
+        // Check for pending invite code (from AuthForm)
+        const pendingInviteCode = sessionStorage.getItem('pendingInviteCode');
+        if (pendingInviteCode && !householdId) {
+          try {
+            console.log('[HouseholdContext] Processing pending invite code:', pendingInviteCode);
+            const inviteHousehold = await householdService.findHouseholdByInviteCode(pendingInviteCode);
+            if (inviteHousehold) {
+              await householdService.joinHousehold(user!.uid, inviteHousehold.id);
+              householdId = inviteHousehold.id;
+              console.log('[HouseholdContext] Successfully joined household via invite:', inviteHousehold.name);
+            }
+          } catch (err) {
+            console.error('[HouseholdContext] Failed to process pending invite:', err);
+          } finally {
+            // Always clear the pending invite code
+            sessionStorage.removeItem('pendingInviteCode');
+          }
+        }
 
         if (householdId) {
+          console.log('[HouseholdContext] User has household, subscribing:', householdId);
           // User already has a household - subscribe to it
           unsubHousehold = householdService.subscribeHousehold(householdId, (h) => {
+            console.log('[HouseholdContext] Household updated:', h);
             setHousehold(h);
             setLoading(false);
           });
-          unsubMembers = householdService.subscribeMembers(householdId, setMembers);
+          unsubMembers = householdService.subscribeMembers(householdId, (members) => {
+            console.log('[HouseholdContext] Members updated:', members);
+            setMembers(members);
+          });
         } else {
+          console.log('[HouseholdContext] No household found - showing setup flow');
           // No household - show setup flow
           setHousehold(null);
           setLoading(false);
         }
       } catch (err) {
-        console.error('Error initializing household:', err);
+        console.error('[HouseholdContext] Error initializing household:', err);
         setLoading(false);
       }
     }
@@ -85,10 +112,19 @@ export const HouseholdProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [user]);
 
   const joinHouseholdAction = useCallback(async (inviteCode: string) => {
-    if (!user) return;
+    if (!user) {
+      console.error('[HouseholdContext] Cannot join - no user');
+      return;
+    }
+    console.log('[HouseholdContext] Join household action:', { inviteCode, userId: user.uid });
     const found = await householdService.findHouseholdByInviteCode(inviteCode);
-    if (!found) throw new Error('Invalid invite code');
+    if (!found) {
+      console.error('[HouseholdContext] Invalid invite code');
+      throw new Error('Invalid invite code');
+    }
+    console.log('[HouseholdContext] Found household, joining:', found);
     await householdService.joinHousehold(user.uid, found.id);
+    console.log('[HouseholdContext] Join complete, triggering refresh');
     // Trigger re-initialization to fetch updated profile and set up subscriptions
     setRefreshTrigger(prev => prev + 1);
   }, [user]);
