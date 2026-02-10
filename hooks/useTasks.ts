@@ -10,14 +10,14 @@ const MIGRATION_KEY = 'tidyhome_schema_v2';
 
 const noop = async () => {};
 
-export function useTasks(userId: string | null) {
+export function useTasks(householdId: string | null) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!userId) {
+    if (!householdId) {
       setTasks([]);
       setLoading(false);
       setNeedsOnboarding(false);
@@ -29,22 +29,22 @@ export function useTasks(userId: string | null) {
 
     async function initializeTasks() {
       try {
-        // Check if user has existing data
-        const hasData = await firestoreService.hasExistingData(userId!);
+        // Check if household has existing data
+        const hasData = await firestoreService.hasExistingData(householdId!);
 
         if (!hasData) {
-          // First-time user: show onboarding wizard instead of auto-seeding
+          // First-time household: show onboarding wizard
           setNeedsOnboarding(true);
           setLoading(false);
           return;
         }
 
         // Subscribe to real-time updates
-        unsubscribe = firestoreService.subscribeTasks(userId!, async (updatedTasks) => {
+        unsubscribe = firestoreService.subscribeTasks(householdId!, async (updatedTasks) => {
           // Check if migration is needed (one-time)
           if (!localStorage.getItem(MIGRATION_KEY) && updatedTasks.some(needsMigration)) {
             console.log('Migrating tasks to recurrence model...');
-            await runMigration(userId!, updatedTasks);
+            await runMigration(householdId!, updatedTasks);
             localStorage.setItem(MIGRATION_KEY, 'true');
             // The migration writes will trigger another snapshot, so we return early
             return;
@@ -67,16 +67,16 @@ export function useTasks(userId: string | null) {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [userId]);
+  }, [householdId]);
 
   const completeOnboarding = async (selectedTasks: Task[]) => {
-    if (!userId) return;
+    if (!householdId) return;
     try {
-      await firestoreService.saveTasks(userId, selectedTasks);
+      await firestoreService.saveTasks(householdId, selectedTasks);
       setNeedsOnboarding(false);
       setLoading(true);
       // Start subscribing now that data exists
-      firestoreService.subscribeTasks(userId, async (updatedTasks) => {
+      firestoreService.subscribeTasks(householdId, async (updatedTasks) => {
         setTasks(updatedTasks);
         setLoading(false);
       });
@@ -87,9 +87,9 @@ export function useTasks(userId: string | null) {
   };
 
   const updateTask = async (taskId: string, updates: Partial<Task>) => {
-    if (!userId) return;
+    if (!householdId) return;
     try {
-      await firestoreService.updateTask(userId, taskId, updates);
+      await firestoreService.updateTask(householdId, taskId, updates);
     } catch (err) {
       console.error('Error updating task:', err);
       throw err;
@@ -97,9 +97,9 @@ export function useTasks(userId: string | null) {
   };
 
   const saveTask = async (task: Task) => {
-    if (!userId) return;
+    if (!householdId) return;
     try {
-      await firestoreService.saveTask(userId, task);
+      await firestoreService.saveTask(householdId, task);
     } catch (err) {
       console.error('Error saving task:', err);
       throw err;
@@ -107,9 +107,9 @@ export function useTasks(userId: string | null) {
   };
 
   const deleteTask = async (taskId: string) => {
-    if (!userId) return;
+    if (!householdId) return;
     try {
-      await firestoreService.deleteTask(userId, taskId);
+      await firestoreService.deleteTask(householdId, taskId);
     } catch (err) {
       console.error('Error deleting task:', err);
       throw err;
@@ -117,7 +117,7 @@ export function useTasks(userId: string | null) {
   };
 
   const addRoom = async (roomName: string, roomType: RoomType, seedTasks: RoomTaskTemplate[]) => {
-    if (!userId) return;
+    if (!householdId) return;
     const today = getToday();
 
     const newTasks: Task[] = seedTasks.map((tmpl, i) => {
@@ -156,22 +156,22 @@ export function useTasks(userId: string | null) {
       task.isDue = isTaskDueOnDate(task, today);
     }
 
-    await firestoreService.saveTasks(userId, newTasks);
+    await firestoreService.saveTasks(householdId, newTasks);
   };
 
   const renameRoom = async (oldName: string, newName: string) => {
-    if (!userId) return;
+    if (!householdId) return;
     const roomTasks = tasks.filter(t => t.room === oldName);
     for (const task of roomTasks) {
-      await firestoreService.updateTask(userId, task.id, { room: newName });
+      await firestoreService.updateTask(householdId, task.id, { room: newName });
     }
   };
 
   const deleteRoom = async (roomName: string) => {
-    if (!userId) return;
+    if (!householdId) return;
     const roomTasks = tasks.filter(t => t.room === roomName);
     for (const task of roomTasks) {
-      await firestoreService.deleteTask(userId, task.id);
+      await firestoreService.deleteTask(householdId, task.id);
     }
   };
 
@@ -193,7 +193,7 @@ export function useTasks(userId: string | null) {
 /**
  * One-time migration: add recurrence fields to existing tasks and run optimizer.
  */
-async function runMigration(userId: string, tasks: Task[]) {
+async function runMigration(householdId: string, tasks: Task[]) {
   // 1. Migrate each task to add scheduledDay, anchorDate, completedDates
   const migratedTasks = tasks.map(task => ({
     ...task,
@@ -208,6 +208,6 @@ async function runMigration(userId: string, tasks: Task[]) {
   }
 
   // 3. Save all migrated tasks back to Firestore
-  await firestoreService.saveTasks(userId, migratedTasks);
+  await firestoreService.saveTasks(householdId, migratedTasks);
   console.log('Migration complete. Tasks updated with recurrence fields.');
 }

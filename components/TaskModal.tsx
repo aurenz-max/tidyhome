@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Task, RoomType, Frequency } from '../types';
 import { X } from 'lucide-react';
+import { useHousehold } from '../contexts/HouseholdContext';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -43,6 +44,9 @@ const COMMON_CLEANING_TASKS = [
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mode, existingTasks = [] }) => {
+  const { members } = useHousehold();
+  const showAssignee = members.length > 1;
+
   // Derive unique rooms from existing tasks
   const existingRooms = useMemo(() => {
     const roomMap = new Map<string, RoomType>();
@@ -64,6 +68,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
     estimatedMinutes: 15,
     priority: 'Medium' as 'High' | 'Medium' | 'Low',
     scheduledDay: new Date().getDay() as number | undefined,
+    assignedTo: '' as string,
   });
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
@@ -87,6 +92,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
         estimatedMinutes: task.estimatedMinutes,
         priority: task.priority,
         scheduledDay: task.scheduledDay,
+        assignedTo: task.assignedTo || '',
       });
     } else if (mode === 'add') {
       setFormData({
@@ -97,6 +103,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
         estimatedMinutes: 15,
         priority: 'Medium',
         scheduledDay: new Date().getDay(),
+        assignedTo: '',
       });
     }
     // Reset suggestions when modal opens/closes
@@ -158,6 +165,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
       estimatedMinutes: formData.estimatedMinutes,
       priority: formData.priority,
       scheduledDay: needsScheduledDay ? formData.scheduledDay : undefined,
+      assignedTo: formData.assignedTo || undefined,
       isDue: true,
     };
 
@@ -259,6 +267,27 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, mo
               </p>
             )}
           </div>
+
+          {/* Assign To */}
+          {showAssignee && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Assign To
+              </label>
+              <select
+                value={formData.assignedTo}
+                onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="">Everyone (unassigned)</option>
+                {members.map(m => (
+                  <option key={m.uid} value={m.uid}>
+                    {m.displayName || m.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Frequency and Estimated Time */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

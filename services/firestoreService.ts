@@ -18,22 +18,26 @@ import { Task } from '../types';
 const TASKS_COLLECTION = 'tasks';
 const SETTINGS_COLLECTION = 'settings';
 
-// Get user-specific collection path
+// Household-scoped collection paths
+const getHouseholdTasksCollection = (householdId: string) => collection(db, `households/${householdId}/${TASKS_COLLECTION}`);
+const getHouseholdSettingsDoc = (householdId: string) => doc(db, `households/${householdId}/${SETTINGS_COLLECTION}/preferences`);
+
+// Legacy user-scoped paths (used only during migration)
 const getUserTasksCollection = (userId: string) => collection(db, `users/${userId}/${TASKS_COLLECTION}`);
 const getUserSettingsDoc = (userId: string) => doc(db, `users/${userId}/${SETTINGS_COLLECTION}/preferences`);
 
-// Tasks CRUD operations
+// Tasks CRUD operations (household-scoped)
 export const firestoreService = {
   // Fetch all tasks
-  async getTasks(userId: string): Promise<Task[]> {
-    const tasksCol = getUserTasksCollection(userId);
+  async getTasks(householdId: string): Promise<Task[]> {
+    const tasksCol = getHouseholdTasksCollection(householdId);
     const snapshot = await getDocs(tasksCol);
     return snapshot.docs.map(doc => ({ ...doc.data() } as Task));
   },
 
   // Subscribe to real-time task updates
-  subscribeTasks(userId: string, callback: (tasks: Task[]) => void): () => void {
-    const tasksCol = getUserTasksCollection(userId);
+  subscribeTasks(householdId: string, callback: (tasks: Task[]) => void): () => void {
+    const tasksCol = getHouseholdTasksCollection(householdId);
     return onSnapshot(tasksCol, (snapshot) => {
       const tasks = snapshot.docs.map(doc => ({ ...doc.data() } as Task));
       callback(tasks);
@@ -41,9 +45,8 @@ export const firestoreService = {
   },
 
   // Add or update a task
-  async saveTask(userId: string, task: Task): Promise<void> {
-    const taskDoc = doc(getUserTasksCollection(userId), task.id);
-    console.log('💾 Saving task to Firestore:', task.id);
+  async saveTask(householdId: string, task: Task): Promise<void> {
+    const taskDoc = doc(getHouseholdTasksCollection(householdId), task.id);
 
     // Firestore doesn't allow undefined values, so we need to remove them
     const cleanTask: any = {};
@@ -54,15 +57,13 @@ export const firestoreService = {
     }
 
     await setDoc(taskDoc, cleanTask);
-    console.log('✅ Task saved successfully:', task.id);
   },
 
   // Update specific fields of a task
-  async updateTask(userId: string, taskId: string, updates: Partial<Task>): Promise<void> {
-    const taskDoc = doc(getUserTasksCollection(userId), taskId);
+  async updateTask(householdId: string, taskId: string, updates: Partial<Task>): Promise<void> {
+    const taskDoc = doc(getHouseholdTasksCollection(householdId), taskId);
 
-    // Firestore doesn't allow undefined values, so we need to remove them
-    // or use deleteField() for fields we want to clear
+    // Firestore doesn't allow undefined values
     const cleanUpdates: any = {};
     for (const [key, value] of Object.entries(updates)) {
       if (value !== undefined) {
@@ -74,35 +75,69 @@ export const firestoreService = {
   },
 
   // Delete a task
-  async deleteTask(userId: string, taskId: string): Promise<void> {
-    const taskDoc = doc(getUserTasksCollection(userId), taskId);
+  async deleteTask(householdId: string, taskId: string): Promise<void> {
+    const taskDoc = doc(getHouseholdTasksCollection(householdId), taskId);
     await deleteDoc(taskDoc);
   },
 
   // Bulk save tasks (useful for initial data migration)
-  async saveTasks(userId: string, tasks: Task[]): Promise<void> {
-    console.log('💾 Bulk saving', tasks.length, 'tasks to Firestore...');
-    const promises = tasks.map(task => this.saveTask(userId, task));
+  async saveTasks(householdId: string, tasks: Task[]): Promise<void> {
+    const promises = tasks.map(task => this.saveTask(householdId, task));
     await Promise.all(promises);
-    console.log('✅ All tasks saved successfully');
   },
 
   // Settings operations
-  async getSettings(userId: string): Promise<{ houseDescription?: string } | null> {
+  async getSettings(householdId: string): Promise<{ houseDescription?: string } | null> {
+    const settingsDoc = getHouseholdSettingsDoc(householdId);
+    const snapshot = await getDoc(settingsDoc);
+    return snapshot.exists() ? snapshot.data() : null;
+  },
+
+  async saveSettings(householdId: string, settings: { houseDescription?: string }): Promise<void> {
+    const settingsDoc = getHouseholdSettingsDoc(householdId);
+    await setDoc(settingsDoc, settings);
+  },
+
+  // Check if household has task data
+  async hasExistingData(householdId: string): Promise<boolean> {
+    const tasksCol = getHouseholdTasksCollection(householdId);
+    const snapshot = await getDocs(tasksCol);
+    return !snapshot.empty;
+  },
+
+  // Legacy: check if user has tasks at old path (for migration detection)
+  async hasLegacyUserData(userId: string): Promise<boolean> {
+    const tasksCol = getUserTasksCollection(userId);
+    const snapshot = await getDocs(tasksCol);
+    return !snapshot.empty;
+  },
+
+  // Legacy: get tasks from old user-scoped path (for migration)
+  async getLegacyUserTasks(userId: string): Promise<Task[]> {
+    const tasksCol = getUserTasksCollection(userId);
+    const snapshot = await getDocs(tasksCol);
+    return snapshot.docs.map(doc => ({ ...doc.data() } as Task));
+  },
+
+  // Legacy: get settings from old user-scoped path (for migration)
+  async getLegacyUserSettings(userId: string): Promise<{ houseDescription?: string } | null> {
     const settingsDoc = getUserSettingsDoc(userId);
     const snapshot = await getDoc(settingsDoc);
     return snapshot.exists() ? snapshot.data() : null;
   },
 
-  async saveSettings(userId: string, settings: { houseDescription?: string }): Promise<void> {
-    const settingsDoc = getUserSettingsDoc(userId);
-    await setDoc(settingsDoc, settings);
-  },
-
-  // Check if user has data (for first-time initialization)
-  async hasExistingData(userId: string): Promise<boolean> {
+  // Legacy: delete old user-scoped tasks (after migration)
+  async deleteLegacyUserData(userId: string): Promise<void> {
     const tasksCol = getUserTasksCollection(userId);
     const snapshot = await getDocs(tasksCol);
-    return !snapshot.empty;
-  }
+    for (const taskDoc of snapshot.docs) {
+      await deleteDoc(taskDoc.ref);
+    }
+    // Also try to delete settings
+    try {
+      await deleteDoc(getUserSettingsDoc(userId));
+    } catch (e) {
+      // Settings may not exist, that's fine
+    }
+  },
 };

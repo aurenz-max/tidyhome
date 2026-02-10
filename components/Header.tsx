@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Sparkles, Calendar as CalendarIcon, List, Scale, LogOut, UserCircle, Settings } from 'lucide-react';
+import { Home, Sparkles, Calendar as CalendarIcon, List, Scale, LogOut, UserCircle, Settings, Users } from 'lucide-react';
 
 interface HeaderProps {
   onGenerate: () => void;
@@ -10,9 +10,12 @@ interface HeaderProps {
   userName: string;
   onSignOut: () => void;
   onManageRooms: () => void;
+  householdName?: string;
+  onManageHousehold: () => void;
+  memberCount?: number;
 }
 
-const Header: React.FC<HeaderProps> = ({ onGenerate, onBalance, isGenerating, viewMode, setViewMode, userName, onSignOut, onManageRooms }) => {
+const Header: React.FC<HeaderProps> = ({ onGenerate, onBalance, isGenerating, viewMode, setViewMode, userName, onSignOut, onManageRooms, householdName, onManageHousehold, memberCount }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +42,10 @@ const Header: React.FC<HeaderProps> = ({ onGenerate, onBalance, isGenerating, vi
                 </div>
                 <div className="ml-3">
                 <h1 className="text-xl font-bold text-slate-800">TidyHome AI</h1>
-                <p className="text-xs text-slate-500 hidden md:block">Smart Maintenance for Busy Families</p>
+                <p className="text-xs text-slate-500 hidden md:block">
+                  {householdName || 'Smart Maintenance for Busy Families'}
+                  {memberCount && memberCount > 1 ? ` \u00B7 ${memberCount} members` : ''}
+                </p>
                 </div>
             </div>
             
@@ -124,6 +130,13 @@ const Header: React.FC<HeaderProps> = ({ onGenerate, onBalance, isGenerating, vi
 
               {showUserMenu && (
                 <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                  <button
+                    onClick={() => { setShowUserMenu(false); onManageHousehold(); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    <Users size={15} className="text-slate-400" />
+                    Household Settings
+                  </button>
                   <button
                     onClick={() => { setShowUserMenu(false); onManageRooms(); }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"

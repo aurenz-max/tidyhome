@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { Task, RoomType, Frequency } from '../types';
 import { CheckCircle2, Circle, Clock, AlertCircle, Plus, Edit2, Trash2, Check, X } from 'lucide-react';
 import TaskModal from './TaskModal';
+import { useHousehold } from '../contexts/HouseholdContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface TaskListProps {
   tasks: Task[];
@@ -11,7 +13,10 @@ interface TaskListProps {
 }
 
 const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, onDeleteTask }) => {
-  const [activeFilter, setActiveFilter] = useState<'All' | 'Due' | RoomType>('Due');
+  const { user } = useAuth();
+  const { members, getMemberByUid } = useHousehold();
+  const showAssignees = members.length > 1;
+  const [activeFilter, setActiveFilter] = useState<'All' | 'Due' | 'Mine' | RoomType>('Due');
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
@@ -40,6 +45,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
 
       if (activeFilter === 'All') return true;
       if (activeFilter === 'Due') return task.isDue;
+      if (activeFilter === 'Mine') return task.assignedTo === user?.uid;
       return task.roomType === activeFilter;
     });
   }, [tasks, activeFilter, search]);
@@ -87,6 +93,18 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
       {/* Filters Toolbar */}
       <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+           {showAssignees && (
+             <button
+               onClick={() => setActiveFilter('Mine')}
+               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                 activeFilter === 'Mine'
+                   ? 'bg-indigo-600 text-white shadow-md'
+                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+               }`}
+             >
+               My Tasks
+             </button>
+           )}
            <button
              onClick={() => setActiveFilter('Due')}
              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
@@ -178,9 +196,22 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
                                 </button>
 
                                 <div className="flex-1">
-                                    <p className={`text-sm font-medium ${task.isCompleted ? 'text-slate-500 line-through decoration-slate-400' : 'text-slate-800'}`}>
-                                        {task.description || 'Untitled Task'}
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                      <p className={`text-sm font-medium ${task.isCompleted ? 'text-slate-500 line-through decoration-slate-400' : 'text-slate-800'}`}>
+                                          {task.description || 'Untitled Task'}
+                                      </p>
+                                      {showAssignees && task.assignedTo && (() => {
+                                        const member = getMemberByUid(task.assignedTo);
+                                        return member ? (
+                                          <span
+                                            className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-[10px] font-bold flex-shrink-0"
+                                            title={member.displayName}
+                                          >
+                                            {member.displayName?.[0]?.toUpperCase() || '?'}
+                                          </span>
+                                        ) : null;
+                                      })()}
+                                    </div>
                                     <div className="flex items-center mt-1 space-x-3 text-xs text-slate-500">
                                         <span className="flex items-center">
                                             <Clock size={12} className="mr-1" />

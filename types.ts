@@ -34,6 +34,7 @@ export interface Task {
   scheduledDay?: number; // Weekly/BiWeekly: day-of-week (0=Sun..6=Sat), Monthly/Quarterly: day-of-month (1-31), Daily: undefined
   anchorDate?: string; // YYYY-MM-DD starting reference for BiWeekly/Quarterly recurrence
   completedDates?: string[]; // Array of YYYY-MM-DD dates this task was completed on
+  assignedTo?: string; // uid of the household member assigned to this task
 }
 
 export interface RoomTaskTemplate {
@@ -70,4 +71,23 @@ export interface UserProfile {
   displayName?: string;
   createdAt: string;
   photoURL?: string;
+  householdId?: string;
+}
+
+export interface Household {
+  id: string;
+  name: string;
+  memberUids: string[];
+  adminUid: string;
+  inviteCode: string;
+  createdAt: string;
+}
+
+export interface HouseholdMember {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  role: 'admin' | 'member';
+  joinedAt: string;
 }

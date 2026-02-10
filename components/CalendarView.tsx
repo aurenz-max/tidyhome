@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Task } from '../types';
 import { isTaskDueOnDate, isOccurrenceCompleted, getToday, addDays } from '../utils/recurrence';
 import { Calendar, Clock, CheckCircle2, Circle, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { useHousehold } from '../contexts/HouseholdContext';
 
 interface CalendarViewProps {
   tasks: Task[];
@@ -9,6 +10,8 @@ interface CalendarViewProps {
 }
 
 const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onToggleTask }) => {
+  const { members, getMemberByUid } = useHousehold();
+  const showAssignees = members.length > 1;
   const today = getToday();
 
   // Track collapsed groups: "YYYY-MM-DD::RoomName"
@@ -139,12 +142,32 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onToggleTask }) => {
                                                         >
                                                             <button
                                                                 onClick={() => onToggleTask(task.id, date)}
-                                                                className={`flex-shrink-0 mr-4 transition-colors ${
+                                                                className={`flex-shrink-0 mr-3 transition-colors ${
                                                                     completed ? 'text-teal-500' : 'text-slate-300 hover:text-teal-500'
                                                                 }`}
                                                             >
                                                                 {completed ? <CheckCircle2 size={20} /> : <Circle size={20} strokeWidth={2} />}
                                                             </button>
+
+                                                            {showAssignees && task.assignedTo && (() => {
+                                                              const member = getMemberByUid(task.assignedTo);
+                                                              if (!member) return null;
+                                                              return member.photoURL ? (
+                                                                <img
+                                                                  src={member.photoURL}
+                                                                  alt={member.displayName}
+                                                                  className="w-6 h-6 rounded-full object-cover flex-shrink-0 mr-2"
+                                                                  title={member.displayName}
+                                                                />
+                                                              ) : (
+                                                                <div
+                                                                  className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0 mr-2"
+                                                                  title={member.displayName}
+                                                                >
+                                                                  {member.displayName?.[0]?.toUpperCase() || '?'}
+                                                                </div>
+                                                              );
+                                                            })()}
 
                                                             <div className="flex-1">
                                                                 <div className="flex justify-between items-start">

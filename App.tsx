@@ -6,23 +6,28 @@ import CalendarView from './components/CalendarView';
 import AuthForm from './components/AuthForm';
 import OnboardingWizard from './components/OnboardingWizard';
 import RoomManager from './components/RoomManager';
+import HouseholdSetup from './components/HouseholdSetup';
+import HouseholdSettings from './components/HouseholdSettings';
 import { Task, Frequency, RoomType } from './types';
 import { FALLBACK_TASKS } from './constants';
 import { generateSmartSchedule } from './services/geminiService';
 import { useTasks } from './hooks/useTasks';
 import { useAuth } from './contexts/AuthContext';
+import { useHousehold } from './contexts/HouseholdContext';
 import { isTaskDueOnDate, isOccurrenceCompleted, getNextOccurrence, getToday } from './utils/recurrence';
 import { optimizeWeeklySchedule } from './utils/scheduler';
 import { Sparkles, Info, Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { tasks: firestoreTasks, loading: firestoreLoading, needsOnboarding, updateTask, saveTask, deleteTask, completeOnboarding, addRoom, renameRoom, deleteRoom } = useTasks(user?.uid || null);
+  const { household, members, loading: householdLoading } = useHousehold();
+  const { tasks: firestoreTasks, loading: firestoreLoading, needsOnboarding, updateTask, saveTask, deleteTask, completeOnboarding, addRoom, renameRoom, deleteRoom } = useTasks(household?.id || null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'rooms' | 'calendar'>('rooms');
   const [showRoomManager, setShowRoomManager] = useState(false);
+  const [showHouseholdSettings, setShowHouseholdSettings] = useState(false);
 
   // Daily reset: prune old completedDates, recompute isCompleted
   useEffect(() => {
@@ -177,6 +182,7 @@ const App: React.FC = () => {
         completedDates: [],
         scheduledDay: taskData.scheduledDay,
         anchorDate: taskData.anchorDate,
+        assignedTo: taskData.assignedTo,
       };
 
       // Compute nextDueDate and isDue from recurrence
@@ -211,7 +217,24 @@ const App: React.FC = () => {
     return <AuthForm />;
   }
 
-  // Show onboarding wizard for first-time users
+  // Show loading state while household is initializing
+  if (householdLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-teal-600 animate-spin mx-auto mb-4" />
+          <p className="text-slate-600 text-lg">Loading household...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show household setup if user has no household
+  if (!household) {
+    return <HouseholdSetup />;
+  }
+
+  // Show onboarding wizard for first-time households
   if (needsOnboarding) {
     return (
       <OnboardingWizard
@@ -246,6 +269,9 @@ const App: React.FC = () => {
         userName={user.displayName || user.email || 'User'}
         onSignOut={signOut}
         onManageRooms={() => setShowRoomManager(true)}
+        householdName={household.name}
+        onManageHousehold={() => setShowHouseholdSettings(true)}
+        memberCount={members.length}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -253,7 +279,12 @@ const App: React.FC = () => {
         {/* Welcome / Context Banner */}
         <div className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900">Welcome Home</h2>
-            <p className="text-slate-500 mt-1">Keep your 2,700 sq ft home fresh for the family.</p>
+            <p className="text-slate-500 mt-1">
+              {members.length > 1
+                ? `${household.name} - ${members.length} members keeping it tidy.`
+                : 'Keep your home fresh and tidy.'
+              }
+            </p>
 
             {aiAnalysis && (
                 <div className="mt-4 bg-teal-50 border border-teal-100 rounded-lg p-4 flex items-start animate-fade-in">
@@ -267,7 +298,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Dashboard Stats */}
-        {viewMode === 'rooms' && <StatsOverview tasks={tasks} />}
+        {viewMode === 'rooms' && <StatsOverview tasks={tasks} members={members} />}
 
         {/* Views */}
         {viewMode === 'rooms' ? (
@@ -295,6 +326,11 @@ const App: React.FC = () => {
         onAddRoom={addRoom}
         onRenameRoom={renameRoom}
         onDeleteRoom={deleteRoom}
+      />
+
+      <HouseholdSettings
+        isOpen={showHouseholdSettings}
+        onClose={() => setShowHouseholdSettings(false)}
       />
     </div>
   );
