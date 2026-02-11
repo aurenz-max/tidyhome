@@ -90,12 +90,12 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Household Settings</h2>
-            <p className="text-sm text-slate-500 mt-1">{household.name}</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Household Settings</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{household.name}</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
             <X size={24} />
@@ -105,13 +105,13 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
         <div className="p-6 space-y-6">
           {/* Invite Section */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Invite Members</h3>
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-3">Invite Members</h3>
 
             {/* Invite Link */}
-            <div className="bg-gradient-to-br from-indigo-50 to-teal-50 rounded-lg p-4 border border-indigo-200 mb-3">
-              <p className="text-xs font-medium text-slate-600 mb-2">Share this link:</p>
-              <div className="bg-white rounded-lg p-3 border border-slate-200 mb-3">
-                <p className="text-xs font-mono text-slate-600 break-all">
+            <div className="bg-gradient-to-br from-indigo-50 to-teal-50 dark:from-indigo-900/20 dark:to-teal-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800 mb-3">
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Share this link:</p>
+              <div className="bg-white dark:bg-slate-700 rounded-lg p-3 border border-slate-200 dark:border-slate-600 mb-3">
+                <p className="text-xs font-mono text-slate-600 dark:text-slate-300 break-all">
                   {`${window.location.origin}${window.location.pathname}?code=${household.inviteCode}`}
                 </p>
               </div>
@@ -134,16 +134,16 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
             </div>
 
             {/* Invite Code (for manual entry) */}
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <p className="text-xs font-medium text-slate-600 mb-2">Or share this code:</p>
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 border border-slate-200 dark:border-slate-600">
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Or share this code:</p>
               <div className="flex items-center justify-between">
-                <span className="text-xl font-mono font-bold tracking-[0.3em] text-slate-800">
+                <span className="text-xl font-mono font-bold tracking-[0.3em] text-slate-800 dark:text-slate-200">
                   {household.inviteCode}
                 </span>
                 <div className="flex gap-2">
                   <button
                     onClick={handleCopyCode}
-                    className="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5"
+                    className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors flex items-center gap-1.5"
                   >
                     {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                     Code
@@ -152,7 +152,7 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
                     <button
                       onClick={handleRegenerate}
                       disabled={loading}
-                      className="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors flex items-center gap-1.5 disabled:opacity-50"
                       title="Generate a new invite code"
                     >
                       <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
@@ -167,7 +167,7 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
           {/* Members Section */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
                 Members ({members.length})
               </h3>
               {isAdmin && !showAddMember && (
@@ -227,7 +227,7 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
               {sortedMembers.map((member) => (
                 <div
                   key={member.uid}
-                  className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-white dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
                     {/* Avatar */}
@@ -244,7 +244,7 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
                     )}
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-slate-800">
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
                           {member.displayName}
                           {member.uid === user?.uid && (
                             <span className="text-slate-400 font-normal ml-1">(you)</span>
@@ -305,7 +305,7 @@ const HouseholdSettings: React.FC<HouseholdSettingsProps> = ({ isOpen, onClose }
 
           {/* Leave Household */}
           {!isAdmin && (
-            <div className="border-t border-slate-200 pt-4">
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
               {confirmingLeave ? (
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-red-600 font-medium flex-1">

@@ -53,7 +53,7 @@ const Counter: React.FC<{
   onChange: (v: number) => void;
 }> = ({ label, value, min, max, onChange }) => (
   <div className="flex items-center justify-between">
-    <span className="text-sm font-medium text-slate-700">{label}</span>
+    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</span>
     <div className="flex items-center gap-2">
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
@@ -62,7 +62,7 @@ const Counter: React.FC<{
       >
         <Minus size={14} />
       </button>
-      <span className="w-6 text-center font-semibold text-slate-800">{value}</span>
+      <span className="w-6 text-center font-semibold text-slate-800 dark:text-slate-200">{value}</span>
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
@@ -603,18 +603,18 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ householdId, onComp
   }, [selectedRooms]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-slate-100">
+        <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
-              <Sparkles className="text-teal-600" size={20} />
+            <div className="w-10 h-10 bg-teal-100 dark:bg-teal-900/50 rounded-xl flex items-center justify-center">
+              <Sparkles className="text-teal-600 dark:text-teal-400" size={20} />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900">Set Up Your Home</h1>
-              <p className="text-sm text-slate-500">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Set Up Your Home</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {step === 1 && 'Configure your floors, bedrooms, and bathrooms'}
                 {step === 2 && 'Review recommended tasks for each room'}
                 {step === 3 && 'Ready to get started!'}
@@ -626,7 +626,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ householdId, onComp
           <div className="flex items-center gap-2 justify-center">
             {[1, 2, 3].map(s => (
               <div key={s} className={`h-2 rounded-full transition-all duration-300 ${
-                s === step ? 'w-8 bg-teal-600' : s < step ? 'w-2 bg-teal-400' : 'w-2 bg-slate-200'
+                s === step ? 'w-8 bg-teal-600' : s < step ? 'w-2 bg-teal-400' : 'w-2 bg-slate-200 dark:bg-slate-600'
               }`} />
             ))}
           </div>
@@ -640,10 +640,10 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ householdId, onComp
             <div className="space-y-4">
 
               {/* Main Floor */}
-              <div className="border border-slate-200 rounded-xl p-4">
+              <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Home size={18} className="text-teal-600" />
-                  <h3 className="font-semibold text-slate-800">Main Floor</h3>
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-200">Main Floor</h3>
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-3">
@@ -656,8 +656,8 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ householdId, onComp
                         onClick={() => toggleMainFloorRoom(roomType)}
                         className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
                           selected
-                            ? 'border-teal-500 bg-teal-50 text-teal-800'
-                            : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                            ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-400'
+                            : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300'
                         }`}
                       >
                         <Icon size={14} className={selected ? 'text-teal-600' : 'text-slate-400'} />
@@ -699,7 +699,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ householdId, onComp
               </div>
 
               {/* Upstairs */}
-              <div className="border border-slate-200 rounded-xl p-4">
+              <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <ArrowUp size={18} className={upstairsEnabled ? 'text-teal-600' : 'text-slate-400'} />
@@ -731,14 +731,14 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ householdId, onComp
                         onChange={e => setUpstairsHallway(e.target.checked)}
                         className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                       />
-                      <span className="text-sm font-medium text-slate-700">Hallway</span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Hallway</span>
                     </label>
                   </div>
                 )}
               </div>
 
               {/* Basement */}
-              <div className="border border-slate-200 rounded-xl p-4">
+              <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ArrowDownToLine size={18} className={basementEnabled ? 'text-teal-600' : 'text-slate-400'} />
@@ -751,7 +751,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ householdId, onComp
               {/* Custom rooms */}
               {customRooms.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-slate-700 mb-2">Custom Rooms</h4>
+                  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Custom Rooms</h4>
                   <div className="flex flex-wrap gap-2">
                     {customRooms.map(room => (
                       <div key={room.name} className="flex items-center gap-1 bg-teal-50 border border-teal-200 rounded-lg px-3 py-1.5">
@@ -830,19 +830,19 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ householdId, onComp
                   + customTasksForRoom.filter(t => taskSelections[taskKey(room, t.description)]).length;
 
                 return (
-                  <div key={rKey} className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div key={rKey} className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                     <button
                       onClick={() => toggleExpandRoom(rKey)}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors"
+                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                     >
                       {expanded ? <ChevronDown size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
                       <Icon size={18} className="text-teal-600" />
-                      <span className="font-medium text-slate-800 flex-1 text-left">{room.name}</span>
-                      <span className="text-xs text-slate-500">{checkedCount}/{totalTasks} tasks</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-200 flex-1 text-left">{room.name}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{checkedCount}/{totalTasks} tasks</span>
                     </button>
 
                     {expanded && (
-                      <div className="border-t border-slate-100 bg-slate-50/50">
+                      <div className="border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
                         {/* Catalog tasks (editable descriptions) */}
                         {catalogTasks.map(task => {
                           const key = taskKey(room, task.description);
@@ -995,19 +995,19 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ householdId, onComp
               <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Sparkles className="text-teal-600" size={28} />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">You're all set!</h2>
-              <p className="text-slate-500 mb-8">Here's a summary of your cleaning schedule.</p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">You're all set!</h2>
+              <p className="text-slate-500 dark:text-slate-400 mb-8">Here's a summary of your cleaning schedule.</p>
 
               <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto mb-8">
-                <div className="bg-slate-50 rounded-xl p-4">
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
                   <p className="text-2xl font-bold text-teal-600">{summary.roomCount}</p>
                   <p className="text-xs text-slate-500 mt-1">Rooms</p>
                 </div>
-                <div className="bg-slate-50 rounded-xl p-4">
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
                   <p className="text-2xl font-bold text-teal-600">{summary.taskCount}</p>
                   <p className="text-xs text-slate-500 mt-1">Tasks</p>
                 </div>
-                <div className="bg-slate-50 rounded-xl p-4">
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
                   <p className="text-2xl font-bold text-teal-600">{summary.weeklyHours}h</p>
                   <p className="text-xs text-slate-500 mt-1">Per Week</p>
                 </div>
@@ -1021,7 +1021,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ householdId, onComp
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-white">
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
           {step === 2 && (
             <div className="text-center text-sm text-slate-500 mb-3">
               {summary.taskCount} tasks selected &middot; ~{summary.weeklyHours} hrs/week

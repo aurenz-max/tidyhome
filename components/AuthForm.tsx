@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { householdService } from '../services/householdService';
-import { Home, Loader2, AlertCircle, Users } from 'lucide-react';
+import { Loader2, AlertCircle, Users } from 'lucide-react';
+import TidyHomeLogo from './TidyHomeLogo';
 
 const AuthForm: React.FC = () => {
   const { signUp, signIn, signInWithGoogle } = useAuth();
@@ -95,15 +96,15 @@ const AuthForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-teal-100 text-teal-600 mb-4">
-            <Home size={28} />
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400 mb-4">
+            <TidyHomeLogo size={32} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-800">TidyHome AI</h1>
-          <p className="text-slate-500 mt-1">Smart Maintenance for Busy Families</p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">TidyHome AI</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Smart Maintenance for Busy Families</p>
         </div>
 
         {/* Invite Banner */}
@@ -125,15 +126,15 @@ const AuthForm: React.FC = () => {
         )}
 
         {/* Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
           {/* Tabs */}
-          <div className="flex border-b border-slate-200">
+          <div className="flex border-b border-slate-200 dark:border-slate-700">
             <button
               onClick={() => switchMode('signin')}
               className={`flex-1 py-3 text-sm font-medium transition-colors ${
                 mode === 'signin'
-                  ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50 dark:bg-teal-900/20'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
               }`}
             >
               Sign In
@@ -142,8 +143,8 @@ const AuthForm: React.FC = () => {
               onClick={() => switchMode('signup')}
               className={`flex-1 py-3 text-sm font-medium transition-colors ${
                 mode === 'signup'
-                  ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50 dark:bg-teal-900/20'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
               }`}
             >
               Sign Up
@@ -163,7 +164,7 @@ const AuthForm: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'signup' && (
                 <div>
-                  <label htmlFor="displayName" className="block text-sm font-medium text-slate-700 mb-1">
+                  <label htmlFor="displayName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Display Name
                   </label>
                   <input
@@ -172,13 +173,13 @@ const AuthForm: React.FC = () => {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Your name"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
               )}
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Email
                 </label>
                 <input
@@ -188,12 +189,12 @@ const AuthForm: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Password
                 </label>
                 <input
@@ -203,7 +204,7 @@ const AuthForm: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="At least 6 characters"
                   required
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
 
@@ -225,10 +226,10 @@ const AuthForm: React.FC = () => {
             {/* Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
+                <div className="w-full border-t border-slate-200 dark:border-slate-600" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-3 text-slate-400 uppercase">or</span>
+                <span className="bg-white dark:bg-slate-800 px-3 text-slate-400 uppercase">or</span>
               </div>
             </div>
 
@@ -236,7 +237,7 @@ const AuthForm: React.FC = () => {
             <button
               onClick={handleGoogleSignIn}
               disabled={isSubmitting}
-              className="w-full py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path

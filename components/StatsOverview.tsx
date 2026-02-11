@@ -73,13 +73,13 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ tasks, members = [] }) =>
     <div className="space-y-6 mb-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Summary Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-center">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Today's Progress</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 flex flex-col justify-center">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Today's Progress</h3>
           <div className="flex items-end space-x-2 mb-2">
               <span className="text-4xl font-bold text-teal-600">{totalTasksToday > 0 ? Math.round((completedTasksToday / totalTasksToday) * 100) : 0}%</span>
-              <span className="text-slate-500 mb-1">complete</span>
+              <span className="text-slate-500 dark:text-slate-400 mb-1">complete</span>
           </div>
-          <div className="w-full bg-slate-100 rounded-full h-2.5 mb-6">
+          <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 mb-6">
               <div
                   className="bg-teal-500 h-2.5 rounded-full transition-all duration-500"
                   style={{ width: `${totalTasksToday > 0 ? Math.round((completedTasksToday / totalTasksToday) * 100) : 0}%` }}
@@ -87,19 +87,19 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ tasks, members = [] }) =>
           </div>
           <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                  <p className="text-slate-500">Remaining Today</p>
-                  <p className="font-semibold text-slate-800">{Math.floor(remainingTimeToday / 60)}h {remainingTimeToday % 60}m</p>
+                  <p className="text-slate-500 dark:text-slate-400">Remaining Today</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">{Math.floor(remainingTimeToday / 60)}h {remainingTimeToday % 60}m</p>
               </div>
               <div>
-                  <p className="text-slate-500">Tasks Left</p>
-                  <p className="font-semibold text-slate-800">{dueTasksToday} of {totalTasksToday}</p>
+                  <p className="text-slate-500 dark:text-slate-400">Tasks Left</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">{dueTasksToday} of {totalTasksToday}</p>
               </div>
           </div>
         </div>
 
         {/* Time Distribution Chart */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hidden md:block">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Today's Effort by Room (min)</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 hidden md:block">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Today's Effort by Room (min)</h3>
           <div className="h-48 w-full">
               <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topRooms} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
@@ -122,8 +122,8 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ tasks, members = [] }) =>
         </div>
 
         {/* Completion Donut */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center hidden lg:flex">
-           <h3 className="text-lg font-semibold text-slate-800 mb-2 w-full text-left">Task Status</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 flex flex-col items-center justify-center hidden lg:flex">
+           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2 w-full text-left">Task Status</h3>
            <div className="h-48 w-full relative">
               <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -144,8 +144,8 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ tasks, members = [] }) =>
               </ResponsiveContainer>
                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                    <div className="text-center">
-                       <p className="text-2xl font-bold text-slate-700">{totalTasksToday}</p>
-                       <p className="text-xs text-slate-500 uppercase tracking-wide">Today</p>
+                       <p className="text-2xl font-bold text-slate-700 dark:text-slate-200">{totalTasksToday}</p>
+                       <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Today</p>
                    </div>
                </div>
            </div>
@@ -154,11 +154,11 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ tasks, members = [] }) =>
 
       {/* Household Activity */}
       {showHouseholdActivity && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Household Activity</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Household Activity</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {memberStats.map(stat => (
-              <div key={stat.uid} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+              <div key={stat.uid} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
                 {stat.photoURL ? (
                   <img
                     src={stat.photoURL}
@@ -171,9 +171,9 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ tasks, members = [] }) =>
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">{stat.displayName}</p>
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{stat.displayName}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 bg-slate-200 rounded-full h-1.5">
+                    <div className="flex-1 bg-slate-200 dark:bg-slate-600 rounded-full h-1.5">
                       <div
                         className="bg-teal-500 h-1.5 rounded-full transition-all duration-500"
                         style={{ width: `${stat.pct}%` }}

@@ -169,15 +169,15 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-slate-50">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Calendar className="text-teal-600" size={28} />
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Calendar className="text-teal-600 dark:text-teal-400" size={28} />
               Bulk Task Scheduler
             </h2>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
               Quickly assign tasks to days and household members
             </p>
           </div>
@@ -195,7 +195,7 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
             {/* Left: Room-based scheduling */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                   Schedule by Room
                 </h3>
                 {hasChanges && (
@@ -220,10 +220,10 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
                 return (
                   <div
                     key={roomSchedule.roomId}
-                    className="border border-slate-200 rounded-lg bg-white overflow-hidden"
+                    className="border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 overflow-hidden"
                   >
                     {/* Room Header */}
-                    <div className="bg-slate-50 p-4 border-b border-slate-200">
+                    <div className="bg-slate-50 dark:bg-slate-700/50 p-4 border-b border-slate-200 dark:border-slate-700">
                       <div className="flex items-center justify-between">
                         <button
                           onClick={() => toggleRoomExpanded(roomSchedule.roomId)}
@@ -234,10 +234,10 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
                           ) : (
                             <ChevronRight size={20} className="text-slate-400" />
                           )}
-                          <h4 className="font-semibold text-slate-900">
+                          <h4 className="font-semibold text-slate-900 dark:text-slate-100">
                             {roomSchedule.roomName}
                           </h4>
-                          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                          <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-600 px-2 py-1 rounded">
                             {roomSchedule.tasks.length} tasks
                           </span>
                         </button>
@@ -253,7 +253,7 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
                             <button
                               key={idx + 1}
                               onClick={() => bulkAssignRoomToDay(roomSchedule, idx + 1)}
-                              className="px-3 py-1 text-xs font-medium bg-white border border-slate-300 rounded hover:bg-teal-50 hover:border-teal-500 hover:text-teal-700 transition-colors"
+                              className="px-3 py-1 text-xs font-medium bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:border-teal-500 hover:text-teal-700 dark:hover:text-teal-400 transition-colors"
                             >
                               {day}
                             </button>
@@ -270,7 +270,7 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
                             <button
                               key={member.uid}
                               onClick={() => bulkAssignRoomToMember(roomSchedule, member.uid)}
-                              className="px-3 py-1 text-xs font-medium bg-white border border-slate-300 rounded hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 transition-colors"
+                              className="px-3 py-1 text-xs font-medium bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-400 transition-colors"
                             >
                               {member.displayName}
                             </button>
@@ -291,13 +291,13 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
                           return (
                             <div
                               key={task.id}
-                              className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200"
+                              className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600"
                             >
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-900 truncate">
+                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
                                   {task.description}
                                 </p>
-                                <p className="text-xs text-slate-500 mt-1">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                   {task.frequency} • {task.estimatedMinutes}min
                                 </p>
                               </div>
@@ -308,7 +308,7 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
                                   <select
                                     value={scheduledDay ?? ''}
                                     onChange={(e) => updateTaskSchedule(task.id, e.target.value ? parseInt(e.target.value) : undefined)}
-                                    className="text-sm px-3 py-1.5 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                                    className="text-sm px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-slate-700 dark:text-slate-200"
                                   >
                                     <option value="">No day set</option>
                                     {DAY_NAMES.map((day, idx) => (
@@ -329,7 +329,7 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
                                     value={scheduledDay ?? ''}
                                     onChange={(e) => updateTaskSchedule(task.id, e.target.value ? parseInt(e.target.value) : undefined)}
                                     placeholder="Day"
-                                    className="w-20 text-sm px-3 py-1.5 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                    className="w-20 text-sm px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
                                   />
                                 </div>
                               )}
@@ -364,7 +364,7 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
             {/* Right: Weekly workload visualization */}
             <div className="lg:col-span-1">
               <div className="sticky top-0">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
                   Weekly Workload
                 </h3>
                 <div className="space-y-3">
@@ -373,9 +373,9 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
                     const rooms = Array.from(workload.rooms);
 
                     return (
-                      <div key={dayIndex} className="bg-white rounded-lg border border-slate-200 p-3">
+                      <div key={dayIndex} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-semibold text-slate-900">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                             {DAY_NAMES[dayIndex]}
                           </span>
                           <span className="text-xs text-slate-600 font-medium">
@@ -384,7 +384,7 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
                         </div>
 
                         {/* Progress Bar */}
-                        <div className="w-full bg-slate-100 rounded-full h-2 mb-2">
+                        <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 mb-2">
                           <div
                             className="bg-teal-500 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${barHeight}%` }}
@@ -406,8 +406,8 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
                 </div>
 
                 {/* Summary */}
-                <div className="mt-4 p-4 bg-teal-50 border border-teal-200 rounded-lg">
-                  <h4 className="text-sm font-semibold text-teal-900 mb-2">
+                <div className="mt-4 p-4 bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 rounded-lg">
+                  <h4 className="text-sm font-semibold text-teal-900 dark:text-teal-300 mb-2">
                     Schedule Summary
                   </h4>
                   <div className="space-y-1 text-xs text-teal-800">
@@ -431,10 +431,10 @@ const BulkScheduler: React.FC<BulkSchedulerProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="border-t border-slate-200 p-6 bg-slate-50 flex justify-between items-center">
+        <div className="border-t border-slate-200 dark:border-slate-700 p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-white transition-colors"
+            className="px-6 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors"
           >
             Cancel
           </button>

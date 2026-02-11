@@ -146,21 +146,21 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
+      <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           {mode === 'add' ? (
             <div className="flex items-center gap-2">
-              <button onClick={() => setMode('list')} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
+              <button onClick={() => setMode('list')} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                 <ChevronLeft size={20} className="text-slate-500" />
               </button>
-              <h2 className="text-lg font-semibold text-slate-800">Add Room</h2>
+              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Add Room</h2>
             </div>
           ) : (
-            <h2 className="text-lg font-semibold text-slate-800">Manage Rooms</h2>
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Manage Rooms</h2>
           )}
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
             <X size={20} className="text-slate-400" />
           </button>
         </div>
@@ -171,7 +171,7 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
           {mode === 'list' ? (
             <>
               {rooms.length === 0 ? (
-                <p className="text-slate-500 text-sm text-center py-8">No rooms yet. Add one to get started.</p>
+                <p className="text-slate-500 dark:text-slate-400 text-sm text-center py-8">No rooms yet. Add one to get started.</p>
               ) : (
                 <div className="space-y-1">
                   {rooms.map(room => {
@@ -180,8 +180,8 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
 
                     return (
                       <div key={room.id} className="group">
-                        <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
+                        <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center">
                             <IconComp size={16} className="text-teal-600" />
                           </div>
 
@@ -196,10 +196,10 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
                                   if (e.key === 'Escape') setEditingRoom(null);
                                 }}
                                 onBlur={handleCommitRename}
-                                className="w-full text-sm font-medium text-slate-800 border border-teal-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                className="w-full text-sm font-medium text-slate-800 dark:text-slate-200 border border-teal-300 dark:border-teal-600 rounded px-2 py-0.5 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
                               />
                             ) : (
-                              <p className="text-sm font-medium text-slate-800 truncate">{room.name}</p>
+                              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{room.name}</p>
                             )}
                             <p className="text-xs text-slate-400">{room.taskCount} task{room.taskCount !== 1 ? 's' : ''}</p>
                           </div>
@@ -254,7 +254,7 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
             <div className="space-y-5">
               {/* Room Type Picker */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Room Type</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Room Type</label>
                 <div className="grid grid-cols-5 gap-2">
                   {Object.values(RoomType).map(type => {
                     const template = ROOM_TASK_CATALOG[type];
@@ -266,8 +266,8 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
                         onClick={() => handleTypeChange(type)}
                         className={`flex flex-col items-center gap-1 p-2 rounded-lg border text-xs transition-colors ${
                           isSelected
-                            ? 'border-teal-500 bg-teal-50 text-teal-700'
-                            : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                            ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400'
+                            : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 text-slate-600 dark:text-slate-400'
                         }`}
                       >
                         <IconComp size={18} className={isSelected ? 'text-teal-600' : 'text-slate-400'} />
@@ -280,12 +280,12 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
 
               {/* Room Name */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Room Name</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Room Name</label>
                 <input
                   value={newRoomName}
                   onChange={e => { setNewRoomName(e.target.value); setNameError(''); }}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                    nameError ? 'border-red-300' : 'border-slate-300'
+                  className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                    nameError ? 'border-red-300' : 'border-slate-300 dark:border-slate-600'
                   }`}
                   placeholder="e.g. Main Bedroom, Guest Bath"
                 />
@@ -294,20 +294,20 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
 
               {/* Seed Tasks */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Suggested Tasks ({selectedCount} of {catalogTasks.length} selected)
                 </label>
                 <div className="space-y-1 max-h-48 overflow-y-auto">
                   {catalogTasks.map((tmpl, i) => (
-                    <label key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <label key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={!!selectedSeedTasks[i]}
                         onChange={() => setSelectedSeedTasks(prev => ({ ...prev, [i]: !prev[i] }))}
                         className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                       />
-                      <span className="text-sm text-slate-700 flex-1">{tmpl.description}</span>
-                      <span className="text-xs text-slate-400">{tmpl.frequency} &middot; {tmpl.estimatedMinutes}m</span>
+                      <span className="text-sm text-slate-700 dark:text-slate-300 flex-1">{tmpl.description}</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500">{tmpl.frequency} &middot; {tmpl.estimatedMinutes}m</span>
                     </label>
                   ))}
                 </div>
@@ -317,7 +317,7 @@ const RoomManager: React.FC<RoomManagerProps> = ({ isOpen, onClose, tasks, onAdd
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200">
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700">
           {mode === 'list' ? (
             <button
               onClick={handleStartAdd}

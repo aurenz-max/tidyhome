@@ -269,10 +269,10 @@ const App: React.FC = () => {
   // Show loading state while checking auth
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-teal-600 animate-spin mx-auto mb-4" />
-          <p className="text-slate-600 text-lg">Checking authentication...</p>
+          <p className="text-slate-600 dark:text-slate-400 text-lg">Checking authentication...</p>
         </div>
       </div>
     );
@@ -286,10 +286,10 @@ const App: React.FC = () => {
   // Show loading state while household is initializing
   if (householdLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-teal-600 animate-spin mx-auto mb-4" />
-          <p className="text-slate-600 text-lg">Loading household...</p>
+          <p className="text-slate-600 dark:text-slate-400 text-lg">Loading household...</p>
         </div>
       </div>
     );
@@ -313,10 +313,10 @@ const App: React.FC = () => {
   // Show loading state while Firestore is initializing
   if (firestoreLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-teal-600 animate-spin mx-auto mb-4" />
-          <p className="text-slate-600 text-lg">Loading your tasks...</p>
+          <p className="text-slate-600 dark:text-slate-400 text-lg">Loading your tasks...</p>
         </div>
       </div>
     );
@@ -324,7 +324,7 @@ const App: React.FC = () => {
 
   return (
     <RoomsProvider householdId={household.id}>
-      <div className="min-h-screen bg-slate-50 text-slate-800 pb-20">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 pb-20">
         <Header
           onGenerate={handleGenerateSchedule}
           onBalance={handleBalanceSchedule}
@@ -344,8 +344,8 @@ const App: React.FC = () => {
 
           {/* Welcome / Context Banner */}
           <div className="mb-8">
-              <h2 className="text-2xl font-bold text-slate-900">Welcome Home</h2>
-              <p className="text-slate-500 mt-1">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Welcome Home</h2>
+              <p className="text-slate-500 dark:text-slate-400 mt-1">
                 {members.length > 1
                   ? `${household.name} - ${members.length} members keeping it tidy.`
                   : 'Keep your home fresh and tidy.'
@@ -353,11 +353,11 @@ const App: React.FC = () => {
               </p>
 
               {aiAnalysis && (
-                  <div className="mt-4 bg-teal-50 border border-teal-100 rounded-lg p-4 flex items-start animate-fade-in">
-                      <Sparkles className="text-teal-600 mt-0.5 mr-3 flex-shrink-0" size={18} />
+                  <div className="mt-4 bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 rounded-lg p-4 flex items-start animate-fade-in">
+                      <Sparkles className="text-teal-600 dark:text-teal-400 mt-0.5 mr-3 flex-shrink-0" size={18} />
                       <div>
-                          <h4 className="font-semibold text-teal-800 text-sm mb-1">AI Optimized Schedule</h4>
-                          <p className="text-sm text-teal-700 leading-relaxed">{aiAnalysis}</p>
+                          <h4 className="font-semibold text-teal-800 dark:text-teal-300 text-sm mb-1">AI Optimized Schedule</h4>
+                          <p className="text-sm text-teal-700 dark:text-teal-400 leading-relaxed">{aiAnalysis}</p>
                       </div>
                   </div>
               )}
@@ -375,7 +375,7 @@ const App: React.FC = () => {
 
 
           {!aiAnalysis && tasks.length === FALLBACK_TASKS.length && viewMode === 'rooms' && (
-               <div className="mt-8 p-4 bg-blue-50 text-blue-800 rounded-lg flex items-center border border-blue-100">
+               <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg flex items-center border border-blue-100 dark:border-blue-800">
                   <Info className="mr-3" size={20} />
                   <p className="text-sm">
                       <strong>Tip:</strong> Click "AI Optimize" to generate a full, personalized schedule, or use "Calendar" view to see what's coming up.

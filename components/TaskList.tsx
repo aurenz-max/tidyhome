@@ -118,9 +118,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
         mode={modalMode}
         existingTasks={tasks}
       />
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
       {/* Filters Toolbar */}
-      <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
            {showAssignees && (
              <button
@@ -128,7 +128,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                  activeFilter === 'Mine'
                    ? 'bg-indigo-600 text-white shadow-md'
-                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                   : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600'
                }`}
              >
                My Tasks
@@ -161,7 +161,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                  activeFilter === room
                    ? 'bg-teal-600 text-white shadow-md'
-                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                   : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600'
                }`}
              >
                {room}
@@ -174,12 +174,12 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
             placeholder="Search tasks..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-64 px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+            className="w-full sm:w-64 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
         />
       </div>
 
       {/* Add Task Button */}
-      <div className="p-4 border-b border-slate-200">
+      <div className="p-4 border-b border-slate-200 dark:border-slate-700">
         <button
           onClick={handleAddTask}
           className="w-full sm:w-auto px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center gap-2 font-medium"
@@ -192,16 +192,16 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
       {/* Task List Content */}
       <div className="p-4 space-y-8">
         {Object.keys(groupedTasks).length === 0 ? (
-            <div className="text-center py-20 text-slate-400">
+            <div className="text-center py-20 text-slate-400 dark:text-slate-500">
                 <p>No tasks found for this filter.</p>
             </div>
         ) : (
             Object.entries(groupedTasks).map(([roomName, roomTasks]: [string, Task[]]) => (
                 <div key={roomName} className="animate-fade-in">
-                    <h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-3 flex items-center">
                         <span className="w-2 h-6 bg-teal-500 rounded-full mr-3"></span>
                         {roomName}
-                        <span className="ml-3 text-xs font-normal text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                        <span className="ml-3 text-xs font-normal text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full">
                             {roomTasks.length} tasks
                         </span>
                     </h3>
@@ -211,8 +211,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
                                 key={task.id}
                                 className={`group flex items-center p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
                                     task.isCompleted
-                                        ? 'bg-slate-50 border-slate-100 opacity-60'
-                                        : 'bg-white border-slate-200'
+                                        ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 opacity-60'
+                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                                 }`}
                             >
                                 <button
@@ -226,7 +226,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
 
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2">
-                                      <p className={`text-sm font-medium ${task.isCompleted ? 'text-slate-500 line-through decoration-slate-400' : 'text-slate-800'}`}>
+                                      <p className={`text-sm font-medium ${task.isCompleted ? 'text-slate-500 dark:text-slate-400 line-through decoration-slate-400' : 'text-slate-800 dark:text-slate-200'}`}>
                                           {task.description || 'Untitled Task'}
                                       </p>
                                       {showAssignees && task.assignedTo && (() => {
@@ -241,16 +241,16 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onSaveTask, on
                                         ) : null;
                                       })()}
                                     </div>
-                                    <div className="flex items-center mt-1 space-x-3 text-xs text-slate-500">
+                                    <div className="flex items-center mt-1 space-x-3 text-xs text-slate-500 dark:text-slate-400">
                                         <span className="flex items-center">
                                             <Clock size={12} className="mr-1" />
                                             {task.estimatedMinutes || 0}m
                                         </span>
-                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                        <span className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-600">
                                             {task.frequency}
                                         </span>
                                         {formatScheduledDay(task) && (
-                                            <span className="bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-200 font-medium">
+                                            <span className="bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800 font-medium">
                                                 {formatScheduledDay(task)}
                                             </span>
                                         )}

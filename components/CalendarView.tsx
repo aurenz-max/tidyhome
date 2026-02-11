@@ -84,14 +84,14 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onToggleTask }) => {
             return (
                 <div key={date} className="animate-fade-in">
                     {/* Date Header */}
-                    <div className="flex justify-between items-center mb-4 sticky top-16 bg-slate-50 z-10 py-2 border-b border-slate-200">
+                    <div className="flex justify-between items-center mb-4 sticky top-16 bg-slate-50 dark:bg-slate-900 z-10 py-2 border-b border-slate-200 dark:border-slate-700">
                         <div className="flex items-center">
-                            <Calendar size={20} className="text-teal-600 mr-2" />
-                            <h3 className="text-lg font-bold text-slate-800">{formatDate(date)}</h3>
+                            <Calendar size={20} className="text-teal-600 dark:text-teal-400 mr-2" />
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{formatDate(date)}</h3>
                         </div>
                         {dayTasks.length > 0 && (
                             <span className={`text-xs font-medium px-2 py-1 rounded-full border ${
-                                totalMinutes > 60 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-200 text-slate-600 border-slate-300'
+                                totalMinutes > 60 ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600'
                             }`}>
                                 {Math.floor(totalMinutes / 60)}h {totalMinutes % 60}m total
                             </span>
@@ -100,8 +100,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onToggleTask }) => {
 
                     <div className="space-y-3">
                         {dayTasks.length === 0 ? (
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
-                                <p className="text-slate-400 italic">No tasks scheduled. Enjoy your day!</p>
+                            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 text-center">
+                                <p className="text-slate-400 dark:text-slate-500 italic">No tasks scheduled. Enjoy your day!</p>
                             </div>
                         ) : (
                             sortedRooms.map(room => {
@@ -114,23 +114,23 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onToggleTask }) => {
                                 return (
                                     <div
                                         key={`${date}-${room}`}
-                                        className={`bg-white rounded-lg shadow-sm border overflow-hidden transition-all duration-200 ${
-                                            isAllDone ? 'border-slate-100' : 'border-slate-200'
+                                        className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border overflow-hidden transition-all duration-200 ${
+                                            isAllDone ? 'border-slate-100 dark:border-slate-700' : 'border-slate-200 dark:border-slate-700'
                                         }`}
                                     >
                                         {/* Collapsible Header */}
                                         <button
                                             onClick={() => toggleGroup(date, room)}
-                                            className={`w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors ${
-                                                isCollapsed ? '' : 'border-b border-slate-100'
+                                            className={`w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${
+                                                isCollapsed ? '' : 'border-b border-slate-100 dark:border-slate-700'
                                             }`}
                                         >
                                             <div className="flex items-center">
                                                 {isCollapsed ? <ChevronRight size={18} className="text-slate-400 mr-2" /> : <ChevronDown size={18} className="text-slate-400 mr-2" />}
-                                                <h4 className={`font-semibold text-sm ${isAllDone ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
+                                                <h4 className={`font-semibold text-sm ${isAllDone ? 'text-slate-500 dark:text-slate-400 line-through' : 'text-slate-800 dark:text-slate-200'}`}>
                                                     {room}
                                                 </h4>
-                                                <span className="ml-2 text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                                                <span className="ml-2 text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
                                                     {roomTasks.length}
                                                 </span>
                                             </div>
@@ -141,14 +141,14 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onToggleTask }) => {
 
                                         {/* Task List Body */}
                                         {!isCollapsed && (
-                                            <div className="bg-white">
+                                            <div className="bg-white dark:bg-slate-800">
                                                 {roomTasks.map((task, index) => {
                                                     const completed = isOccurrenceCompleted(task, date);
                                                     return (
                                                         <div
                                                             key={task.id}
-                                                            className={`group flex items-center px-4 py-3 hover:bg-slate-50 transition-colors ${
-                                                                index !== roomTasks.length - 1 ? 'border-b border-slate-50' : ''
+                                                            className={`group flex items-center px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${
+                                                                index !== roomTasks.length - 1 ? 'border-b border-slate-50 dark:border-slate-700' : ''
                                                             }`}
                                                         >
                                                             <button
@@ -182,11 +182,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onToggleTask }) => {
 
                                                             <div className="flex-1">
                                                                 <div className="flex justify-between items-start">
-                                                                    <p className={`text-sm ${completed ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700 font-medium'}`}>
+                                                                    <p className={`text-sm ${completed ? 'text-slate-400 line-through decoration-slate-300' : 'text-slate-700 dark:text-slate-200 font-medium'}`}>
                                                                         {task.description}
                                                                     </p>
                                                                 </div>
-                                                                <div className="flex items-center mt-1 space-x-3 text-xs text-slate-400">
+                                                                <div className="flex items-center mt-1 space-x-3 text-xs text-slate-400 dark:text-slate-500">
                                                                     <span className="flex items-center">
                                                                         <Clock size={12} className="mr-1" />
                                                                         {task.estimatedMinutes}m

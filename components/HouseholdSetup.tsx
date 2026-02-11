@@ -90,12 +90,12 @@ const HouseholdSetup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 max-w-md w-full overflow-hidden relative">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 max-w-md w-full overflow-hidden relative">
         {/* Sign Out Button */}
         <button
           onClick={() => signOut()}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors z-10"
           title="Sign Out"
         >
           <LogOut size={20} />
@@ -123,15 +123,15 @@ const HouseholdSetup: React.FC = () => {
             <div className="space-y-3">
               <button
                 onClick={() => setMode('create')}
-                className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-slate-200 hover:border-teal-300 hover:bg-teal-50 transition-all group"
+                className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 hover:border-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-all group"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center">
                     <Home size={20} />
                   </div>
                   <div className="text-left">
-                    <p className="font-semibold text-slate-800">Create a Household</p>
-                    <p className="text-xs text-slate-500">Start fresh and invite your family</p>
+                    <p className="font-semibold text-slate-800 dark:text-slate-200">Create a Household</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Start fresh and invite your family</p>
                   </div>
                 </div>
                 <ArrowRight size={18} className="text-slate-400 group-hover:text-teal-600 transition-colors" />
@@ -139,15 +139,15 @@ const HouseholdSetup: React.FC = () => {
 
               <button
                 onClick={() => setMode('join')}
-                className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all group"
+                className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 hover:border-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
                     <Users size={20} />
                   </div>
                   <div className="text-left">
-                    <p className="font-semibold text-slate-800">Join a Household</p>
-                    <p className="text-xs text-slate-500">I have an invite code</p>
+                    <p className="font-semibold text-slate-800 dark:text-slate-200">Join a Household</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">I have an invite code</p>
                   </div>
                 </div>
                 <ArrowRight size={18} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
@@ -159,7 +159,7 @@ const HouseholdSetup: React.FC = () => {
           {mode === 'create' && (
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Household Name
                 </label>
                 <input
@@ -168,7 +168,7 @@ const HouseholdSetup: React.FC = () => {
                   value={householdName}
                   onChange={(e) => setHouseholdName(e.target.value)}
                   placeholder="e.g., The Smith Family"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   autoFocus
                 />
               </div>
@@ -177,7 +177,7 @@ const HouseholdSetup: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => { setMode('choose'); setError(''); }}
-                  className="flex-1 px-4 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                  className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium"
                 >
                   Back
                 </button>
@@ -197,7 +197,7 @@ const HouseholdSetup: React.FC = () => {
           {mode === 'join' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Invite Code
                 </label>
                 <input
@@ -210,7 +210,7 @@ const HouseholdSetup: React.FC = () => {
                   }}
                   placeholder="Enter 6-character code"
                   maxLength={6}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center text-2xl tracking-[0.3em] font-mono uppercase"
+                  className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center text-2xl tracking-[0.3em] font-mono uppercase"
                   autoFocus
                 />
               </div>
@@ -245,7 +245,7 @@ const HouseholdSetup: React.FC = () => {
               <button
                 type="button"
                 onClick={() => { setMode('choose'); setError(''); setFoundHousehold(null); setInviteCode(''); }}
-                className="w-full px-4 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium"
               >
                 Back
               </button>
